@@ -406,7 +406,7 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
                     Bitmap bitmap = ImageUtil.nv21ToBitmap1(yuv, SIZE_WIDTH, SIZE_HEIGHT);
 
                     // 保存到本地
-//                  ImageUtil.saveBitmap(SystemClock.uptimeMillis() + ".jpg", bitmap);
+                    ImageUtil.saveBitmap(SystemClock.uptimeMillis() + "HBK.jpg", bitmap);
 
                     if(mCameraListener != null){
                         mCameraListener.onCaptureComplete(bitmap,null);
