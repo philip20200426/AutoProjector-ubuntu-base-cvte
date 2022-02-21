@@ -183,8 +183,8 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
         }
 
 
-//        mPreviewSize = new Size(SIZE_WIDTH, SIZE_HEIGHT);
-        mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class));
+        mPreviewSize = new Size(640, 480);
+//        mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class));
         SIZE_WIDTH = mPreviewSize.getWidth();
         SIZE_HEIGHT = mPreviewSize.getHeight();
         if (mOpenDebug) {
