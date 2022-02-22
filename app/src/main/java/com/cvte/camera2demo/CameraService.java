@@ -1,5 +1,6 @@
 package com.cvte.camera2demo;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -8,14 +9,26 @@ import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.SystemClock;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 
 import com.cvte.camera2demo.util.LogUtil;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -23,6 +36,7 @@ import java.io.OutputStream;
 import java.util.Map;
 
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
+import static org.opencv.core.Core.mean;
 
 public class CameraService extends Service {
     private Camera2Helper mCamera2Helper;
@@ -33,6 +47,7 @@ public class CameraService extends Service {
     public static final String MANUAL_FOCUS_IO_FOREWORD_OFF = "0";
     public static final String MANUAL_FOCUS_IO_BACKWARD_ON = "1";
     public static final String MANUAL_FOCUS_IO_BACKWARD_OFF = "0";
+    double value;
 
     public CameraService() {
     }
@@ -59,11 +74,32 @@ public class CameraService extends Service {
         }
     }
 
+    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS: {
+                    Log.i("HBK", "OpenCV loaded successfully");
+                }
+                break;
+                default: {
+                    super.onManagerConnected(status);
+                }
+                break;
+            }
+        }
+    };
 
     @Override
     public void onCreate() {
         super.onCreate();
-
+        if (!OpenCVLoader.initDebug()) {
+            Log.d("HBK", "Internal OpenCV library not found. Using OpenCV Manager for initialization");
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback);
+        } else {
+            Log.d("HBK", "OpenCV library found inside package. Using it!");
+            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+        }
     }
 
     private void openCamera() {
@@ -115,7 +151,7 @@ public class CameraService extends Service {
 
         openCamera();
 
-        //开始转动马达
+        //1.开始转动马达
         //foreword
         writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_ON);
         writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
@@ -130,13 +166,13 @@ public class CameraService extends Service {
 
     class closehandler implements Runnable{
         public void run() {
-            //停止转动马达
+            //1.停止转动马达
             //stop
             writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
             writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
 
-            //计算拉普拉斯
-            mCamera2Helper.closeCamera(); // 关闭摄像头
+            //2.关闭摄像头
+            mCamera2Helper.closeCamera();
         }
     }
 

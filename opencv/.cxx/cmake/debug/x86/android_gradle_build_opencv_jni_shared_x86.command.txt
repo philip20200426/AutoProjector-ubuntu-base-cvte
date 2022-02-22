@@ -1,0 +1,7 @@
+Executable : D:\Users\user\AppData\Android\SDK\cmake\3.10.2.4988404\bin\ninja.exe
+arguments : 
+-C
+E:\Android_Project\3.auto_projector\auto_projector_v2\auto_projector_v2\opencv\.cxx\cmake\debug\x86
+opencv_jni_shared
+jvmArgs : 
+

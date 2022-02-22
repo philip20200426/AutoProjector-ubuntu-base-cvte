@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
+import android.graphics.LightingColorFilter;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -18,6 +19,7 @@ import android.media.ImageReader;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemClock;
+import android.util.Log;
 import android.util.Range;
 import android.util.Size;
 import android.view.Surface;
@@ -28,12 +30,20 @@ import androidx.annotation.NonNull;
 import com.cvte.camera2demo.util.ImageUtil;
 import com.cvte.camera2demo.util.LogUtil;
 
+import org.opencv.android.Utils;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import static org.opencv.core.Core.mean;
 
 public class Camera2Helper implements ImageReader.OnImageAvailableListener {
     private static final String TAG = "Camera2Helper";
@@ -404,9 +414,10 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
 
                     //bitmap
                     Bitmap bitmap = ImageUtil.nv21ToBitmap1(yuv, SIZE_WIDTH, SIZE_HEIGHT);
-
+                    //计算拉普拉斯清晰度
+                    toClarityByOpenCV(bitmap);
                     // 保存到本地
-                    ImageUtil.saveBitmap(SystemClock.uptimeMillis() + "HBK.jpg", bitmap);
+//                    ImageUtil.saveBitmap(SystemClock.uptimeMillis() + "HBK.jpg", bitmap);
 
                     if(mCameraListener != null){
                         mCameraListener.onCaptureComplete(bitmap,null);
@@ -429,5 +440,34 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
 
         void onCaptureComplete(Bitmap bitmap, File file);
     }
+
+    /*****************************************
+     * function：灰度化计算清晰度
+     * @param srcBitmap 需要计算的图片
+     * @return Bitmap
+     *****************************************/
+    public Bitmap toClarityByOpenCV(Bitmap srcBitmap){
+        int kernel_size = 3;
+        int ddepth = CvType.CV_16U;
+
+
+        Mat mat = new Mat();
+
+        Utils.bitmapToMat(srcBitmap,mat);
+        Mat grayMat = new Mat();
+        Imgproc.cvtColor(mat, grayMat, Imgproc.COLOR_BGRA2GRAY, 1);
+        Mat resizeMat = new Mat();
+        Imgproc.resize(grayMat,resizeMat,new org.opencv.core.Size(512, 512));
+        Mat lapMat = new Mat();
+        Imgproc.Laplacian(resizeMat,lapMat,ddepth,kernel_size);
+        Scalar mean = mean(lapMat);
+        double value = mean.val[0];
+        Log.d("HBK","Clarity Value:" + value);
+
+        Utils.matToBitmap(grayMat,srcBitmap);
+
+        return srcBitmap;
+    }
+
 
 }

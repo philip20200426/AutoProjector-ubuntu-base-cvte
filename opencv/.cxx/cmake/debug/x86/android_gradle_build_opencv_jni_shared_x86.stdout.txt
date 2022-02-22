@@ -1,0 +1,2 @@
+ninja: Entering directory `E:\Android_Project\3.auto_projector\auto_projector_v2\auto_projector_v2\opencv\.cxx\cmake\debug\x86'
+ninja: no work to do.

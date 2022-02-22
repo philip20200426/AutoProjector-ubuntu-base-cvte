@@ -1,0 +1,43 @@
+{
+  "stringTable": {
+    "0": "E:/Android_Project/3.auto_projector/auto_projector_v2/auto_projector_v2/opencv/.cxx/cmake/release/armeabi-v7a",
+    "1": "--target=armv7-none-linux-androideabi16 --gcc-toolchain=D:/Users/user/AppData/Android/SDK/ndk/21.0.6113669/toolchains/llvm/prebuilt/windows-x86_64 --sysroot=D:/Users/user/AppData/Android/SDK/ndk/21.0.6113669/toolchains/llvm/prebuilt/windows-x86_64/sysroot -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -march=armv7-a -mthumb -Wformat -Werror=format-security -Oz -DNDEBUG -fPIC"
+  },
+  "buildFiles": [
+    "D:\\Users\\user\\AppData\\Android\\SDK\\ndk\\21.0.6113669\\build\\cmake\\platforms.cmake",
+    "D:\\Users\\user\\AppData\\Android\\SDK\\ndk\\21.0.6113669\\build\\cmake\\android.toolchain.cmake",
+    "E:\\Android_Project\\3.auto_projector\\auto_projector_v2\\auto_projector_v2\\opencv\\libcxx_helper\\CMakeLists.txt"
+  ],
+  "cleanCommands": [
+    "D:\\Users\\user\\AppData\\Android\\SDK\\cmake\\3.10.2.4988404\\bin\\ninja.exe -C \"E:\\Android_Project\\3.auto_projector\\auto_projector_v2\\auto_projector_v2\\opencv\\.cxx\\cmake\\release\\armeabi-v7a\" clean"
+  ],
+  "buildTargetsCommand": "D:\\Users\\user\\AppData\\Android\\SDK\\cmake\\3.10.2.4988404\\bin\\ninja.exe  -C \"E:\\Android_Project\\3.auto_projector\\auto_projector_v2\\auto_projector_v2\\opencv\\.cxx\\cmake\\release\\armeabi-v7a\" {LIST_OF_TARGETS_TO_BUILD}",
+  "libraries": {
+    "opencv_jni_shared-Release-armeabi-v7a": {
+      "buildCommand": "D:\\Users\\user\\AppData\\Android\\SDK\\cmake\\3.10.2.4988404\\bin\\ninja.exe -C \"E:\\Android_Project\\3.auto_projector\\auto_projector_v2\\auto_projector_v2\\opencv\\.cxx\\cmake\\release\\armeabi-v7a\" opencv_jni_shared",
+      "buildType": "release",
+      "toolchain": "3525393164",
+      "abi": "armeabi-v7a",
+      "artifactName": "opencv_jni_shared",
+      "files": [
+        {
+          "src": "E:\\Android_Project\\3.auto_projector\\auto_projector_v2\\auto_projector_v2\\opencv\\libcxx_helper\\dummy.cpp",
+          "flagsOrdinal": 1,
+          "workingDirectoryOrdinal": 0
+        }
+      ],
+      "headers": [],
+      "output": "E:\\Android_Project\\3.auto_projector\\auto_projector_v2\\auto_projector_v2\\opencv\\.cxx\\cmake\\release\\armeabi-v7a\\libopencv_jni_shared.a",
+      "runtimeFiles": []
+    }
+  },
+  "toolchains": {
+    "3525393164": {
+      "cppCompilerExecutable": "D:\\Users\\user\\AppData\\Android\\SDK\\ndk\\21.0.6113669\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe"
+    }
+  },
+  "cFileExtensions": [],
+  "cppFileExtensions": [
+    "cpp"
+  ]
+}
