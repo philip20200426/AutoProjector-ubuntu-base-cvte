@@ -468,4 +468,15 @@ public class ImageUtil {
             }
         }
     }
+
+    public static double[] laplaceValue = new double[1024];
+    public static int laplaceCounter;
+    public static double laplaceBiggestValue;
+    public static int laplaceBiggestCount;
+    public static void cleanLaplaceValue(){
+        for(int i=0; i < laplaceCounter; i++){
+            laplaceValue[i] = 0;
+        }
+    }
+
 }

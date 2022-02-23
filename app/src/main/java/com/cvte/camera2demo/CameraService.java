@@ -18,6 +18,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.cvte.camera2demo.util.ImageUtil;
 import com.cvte.camera2demo.util.LogUtil;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -149,32 +150,108 @@ public class CameraService extends Service {
 
         startForeground();
 
-        openCamera();
 
-        //1.开始转动马达
-        //foreword
-        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_ON);
+        // 1. 将马达转到初始位置
+        Log.d("HBK","将马达转到初始位置");
+        //backward
+        ImageUtil.laplaceCounter = 0;
+        ImageUtil.laplaceBiggestValue = 0;
+        ImageUtil.laplaceBiggestCount = 0;
+        Handler handlerBegin = new Handler();
+        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
+        writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_ON);
+//        handlerBegin.postDelayed(new closeHandler(), 2600); // 延迟3秒，closeHandler()
+        ImageUtil.cleanLaplaceValue();
+        try {
+            Thread.sleep(2600);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        //stop
+        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
         writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
 
-        Handler handler = new Handler();
-        handler.postDelayed(new closehandler(), 5000); // 延迟2秒，closehandler()
 
+        // 2. 马达转动整个过程拍摄所有画面
+        Log.d("HBK","马达转动整个过程拍摄所有画面");
+        //foreword
+        openCamera();
+        ImageUtil.laplaceCounter = 0;
+        ImageUtil.laplaceBiggestValue = 0;
+        ImageUtil.laplaceBiggestCount = 0;
+        Handler handlerAdjust = new Handler();
+        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_ON);
+        writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+//        handlerAdjust.postDelayed(new closeHandler(), 2500); // 调整整个过程2.5秒，closeHandler()
+        try {
+            Thread.sleep(2400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        //stop
+        Log.d("HBK","拍摄过程stop");
+        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
+        writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+        int maxCount = ImageUtil.laplaceCounter;
+        Log.d("HBK"," maxCount :" + maxCount);
+        // mCamera2Helper.closeCamera();
+
+
+        // 3. 找出清晰度最大值下标以及总共有多少张图片，并计算得出最清晰（最大值）的画面时间在整个马达转动过程中的哪个位置
+        Log.d("HBK","计算最大清晰位置");
+        for(int i = 0; i<maxCount; i++){
+            if(ImageUtil.laplaceBiggestValue < ImageUtil.laplaceValue[i]){
+                ImageUtil.laplaceBiggestValue = ImageUtil.laplaceValue[i];
+                ImageUtil.laplaceBiggestCount = i;
+                Log.d("HBK","MAX value:" + ImageUtil.laplaceBiggestValue + " count:" + ImageUtil.laplaceBiggestCount);
+            }
+        }
+        Log.d("HBK","Adjust back millisecond : " + (2400 - ImageUtil.laplaceBiggestCount * 2400 / maxCount));
+
+        // 4. 按比例回转到对应的位置
+        Log.d("HBK","按比例回转到对应的位置");
+        //backward
+        Handler handlerBackAdj = new Handler();
+        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
+        writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_ON);
+        // 回调n秒
+        // handlerAdjust.postDelayed(new closeHandler(), (ImageUtil.laplaceBiggestCount / maxCount * 2500));
+        try {
+            int time = 2400 - ImageUtil.laplaceBiggestCount * 2400 / maxCount - 300 ;
+            if(time < 0) {
+                time = 0;
+            }
+            Thread.sleep(time);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        //stop
+        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
+        writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+
+
+        ImageUtil.laplaceCounter = 0;
+        ImageUtil.laplaceBiggestValue = 0;
+        ImageUtil.laplaceBiggestCount = 0;
+        ImageUtil.cleanLaplaceValue();
+
+        mCamera2Helper.closeCamera();
         // 9.0以后 START_STICKY不能直接安装
         return START_STICKY;
 //        return START_NOT_STICKY;
     }
 
-    class closehandler implements Runnable{
-        public void run() {
-            //1.停止转动马达
-            //stop
-            writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
-            writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
-
-            //2.关闭摄像头
-            mCamera2Helper.closeCamera();
-        }
-    }
+//    class closeHandler implements Runnable{
+//            public void run() {
+//                //1.停止转动马达
+//                //stop
+//                writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
+//                writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+//
+//                //2.关闭摄像头
+//                mCamera2Helper.closeCamera();
+//            }
+//    }
 
     /*****************************************
      * function：写文件设备

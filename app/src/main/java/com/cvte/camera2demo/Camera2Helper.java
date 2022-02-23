@@ -463,6 +463,8 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
         Scalar mean = mean(lapMat);
         double value = mean.val[0];
         Log.d("HBK","Clarity Value:" + value);
+        ImageUtil.laplaceValue[ImageUtil.laplaceCounter] = value;
+        ImageUtil.laplaceCounter = ImageUtil.laplaceCounter + 1;
 
         Utils.matToBitmap(grayMat,srcBitmap);
 
