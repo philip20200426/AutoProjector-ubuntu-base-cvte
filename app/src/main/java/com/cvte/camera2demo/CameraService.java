@@ -217,7 +217,7 @@ public class CameraService extends Service {
         // 回调n秒
         // handlerAdjust.postDelayed(new closeHandler(), (ImageUtil.laplaceBiggestCount / maxCount * 2500));
         try {
-            int time = 2400 - ImageUtil.laplaceBiggestCount * 2400 / maxCount - 300 ;
+            int time = 2400 - ImageUtil.laplaceBiggestCount * 2400 / maxCount - 275 ;
             if(time < 0) {
                 time = 0;
             }

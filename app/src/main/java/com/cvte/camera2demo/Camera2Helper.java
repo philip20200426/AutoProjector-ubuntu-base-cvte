@@ -108,15 +108,15 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
             }
 
 
-            if (mProcessThread != null) {
-                mBackgroundHandler.removeCallbacksAndMessages(null);
+            if (mProcessHandler != null) {
+                mProcessHandler.removeCallbacksAndMessages(null);
             }
 
             if (mProcessThread != null) {
                 mProcessThread.quitSafely();
                 mProcessThread.join();
                 mProcessThread = null;
-                mProcessThread = null;
+                mProcessHandler = null;
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -398,34 +398,38 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
 
     @Override
     public void onImageAvailable(ImageReader reader) {
-        final Image image = reader.acquireLatestImage();
-        if (image == null || image.getWidth() == 0 || image.getHeight() == 0) {
-            return;
-        }
-        if (ImageFormat.YUV_420_888 == image.getFormat()) {
+        try {
+            final Image image = reader.acquireLatestImage();
+            if (image == null || image.getWidth() == 0 || image.getHeight() == 0) {
+                return;
+            }
+            if (ImageFormat.YUV_420_888 == image.getFormat()) {
 
             final byte[] yuv = ImageUtil.YUV_420_888toNV21(image);
-            image.close();
+//                final byte[] yuv = ImageUtil.getDataFromImage(image, ImageUtil.COLOR_FormatNV21);
+                image.close();
 
-            mProcessHandler.removeCallbacksAndMessages(null);
-            mProcessHandler.post(new Runnable() {
-                @Override
-                public void run() {
+                mProcessHandler.removeCallbacksAndMessages(null);
+                mProcessHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
 
-                    //bitmap
-                    Bitmap bitmap = ImageUtil.nv21ToBitmap1(yuv, SIZE_WIDTH, SIZE_HEIGHT);
-                    //计算拉普拉斯清晰度
-                    toClarityByOpenCV(bitmap);
-                    // 保存到本地
+                        //bitmap
+                        Bitmap bitmap = ImageUtil.nv21ToBitmap1(yuv, SIZE_WIDTH, SIZE_HEIGHT);
+                        //计算拉普拉斯清晰度
+                        toClarityByOpenCV(bitmap);
+                        // 保存到本地
 //                    ImageUtil.saveBitmap(SystemClock.uptimeMillis() + "HBK.jpg", bitmap);
 
-                    if(mCameraListener != null){
-                        mCameraListener.onCaptureComplete(bitmap,null);
+                        if (mCameraListener != null) {
+                            mCameraListener.onCaptureComplete(bitmap, null);
+                        }
+
                     }
-
-                }
-            });
-
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
 
