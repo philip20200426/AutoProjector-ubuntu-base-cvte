@@ -18,6 +18,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.cvte.adapter.android.os.SystemPropertiesAdapter;
 import com.cvte.camera2demo.util.ImageUtil;
 import com.cvte.camera2demo.util.LogUtil;
 
@@ -234,6 +235,7 @@ public class CameraService extends Service {
         ImageUtil.laplaceBiggestValue = 0;
         ImageUtil.laplaceBiggestCount = 0;
         ImageUtil.cleanLaplaceValue();
+        SystemPropertiesAdapter.set("persist.cvte.AUTO_PROJECTOR_ALLOW","1");
 
         mCamera2Helper.closeCamera();
         // 9.0以后 START_STICKY不能直接安装
