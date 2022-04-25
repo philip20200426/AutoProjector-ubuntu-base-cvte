@@ -51,6 +51,14 @@ public class CameraService extends Service {
     public static final String MANUAL_FOCUS_IO_BACKWARD_OFF = "0";
     double value;
 
+    public static final String MANUAL_MOTOR_NODE = "/sys/class/pwm_in/pwm-in/pwm_in";
+    public static final String PLUS_VALUE = "SetSteptoMotor:direction=1,pwm_num=64,extend=2,";
+    public static final String REDUCE_VALUE = "SetSteptoMotor:direction=0,pwm_num=64,extend=2,";
+    public static final String MOTOR_STOP = "SetSteptoMotor:direction=0,pwm_num=64,extend=0,";
+    public static final Boolean CVT_EN_REMOTE_CONTROL_FOCUS = SystemPropertiesAdapter.getBoolean("ro.CVT_EN_REMOTE_CONTROL_FOCUS", false);
+
+    public int routeTotalTime = 0;//ms
+
     public CameraService() {
     }
 
@@ -159,18 +167,28 @@ public class CameraService extends Service {
         ImageUtil.laplaceBiggestValue = 0;
         ImageUtil.laplaceBiggestCount = 0;
         Handler handlerBegin = new Handler();
-        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
-        writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_ON);
+        if(CVT_EN_REMOTE_CONTROL_FOCUS){
+            writeSys(MANUAL_MOTOR_NODE, PLUS_VALUE);
+            routeTotalTime = 10500;
+        }else{
+            writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
+            writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_ON);
+            routeTotalTime = 2400;
+        }
 //        handlerBegin.postDelayed(new closeHandler(), 2600); // 延迟3秒，closeHandler()
         ImageUtil.cleanLaplaceValue();
         try {
-            Thread.sleep(2600);
+            Thread.sleep(routeTotalTime);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         //stop
-        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
-        writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+        if(CVT_EN_REMOTE_CONTROL_FOCUS){
+            writeSys(MANUAL_MOTOR_NODE, MOTOR_STOP);
+        }else{
+            writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
+            writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+        }
 
 
         // 2. 马达转动整个过程拍摄所有画面
@@ -181,18 +199,26 @@ public class CameraService extends Service {
         ImageUtil.laplaceBiggestValue = 0;
         ImageUtil.laplaceBiggestCount = 0;
         Handler handlerAdjust = new Handler();
-        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_ON);
-        writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+        if(CVT_EN_REMOTE_CONTROL_FOCUS){
+            writeSys(MANUAL_MOTOR_NODE, REDUCE_VALUE);
+        }else{
+            writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_ON);
+            writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+        }
 //        handlerAdjust.postDelayed(new closeHandler(), 2500); // 调整整个过程2.5秒，closeHandler()
         try {
-            Thread.sleep(2400);
+            Thread.sleep(routeTotalTime);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         //stop
         Log.d("HBK","拍摄过程stop");
-        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
-        writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+        if(CVT_EN_REMOTE_CONTROL_FOCUS){
+            writeSys(MANUAL_MOTOR_NODE, MOTOR_STOP);
+        }else{
+            writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
+            writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+        }
         int maxCount = ImageUtil.laplaceCounter;
         Log.d("HBK"," maxCount :" + maxCount);
         // mCamera2Helper.closeCamera();
@@ -207,18 +233,22 @@ public class CameraService extends Service {
                 Log.d("HBK","MAX value:" + ImageUtil.laplaceBiggestValue + " count:" + ImageUtil.laplaceBiggestCount);
             }
         }
-        Log.d("HBK","Adjust back millisecond : " + (2400 - ImageUtil.laplaceBiggestCount * 2400 / maxCount));
+        Log.d("HBK","Adjust back millisecond : " + (routeTotalTime - ImageUtil.laplaceBiggestCount * routeTotalTime / maxCount));
 
         // 4. 按比例回转到对应的位置
         Log.d("HBK","按比例回转到对应的位置");
         //backward
         Handler handlerBackAdj = new Handler();
-        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
-        writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_ON);
+        if(CVT_EN_REMOTE_CONTROL_FOCUS){
+            writeSys(MANUAL_MOTOR_NODE, PLUS_VALUE);
+        }else{
+            writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
+            writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_ON);
+        }
         // 回调n秒
         // handlerAdjust.postDelayed(new closeHandler(), (ImageUtil.laplaceBiggestCount / maxCount * 2500));
         try {
-            int time = 2400 - ImageUtil.laplaceBiggestCount * 2400 / maxCount - 275 ;
+            int time = routeTotalTime - ImageUtil.laplaceBiggestCount * routeTotalTime / maxCount - 275 ;
             if(time < 0) {
                 time = 0;
             }
@@ -227,9 +257,12 @@ public class CameraService extends Service {
             e.printStackTrace();
         }
         //stop
-        writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
-        writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
-
+        if(CVT_EN_REMOTE_CONTROL_FOCUS){
+            writeSys(MANUAL_MOTOR_NODE, MOTOR_STOP);
+        }else{
+            writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
+            writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+        }
 
         ImageUtil.laplaceCounter = 0;
         ImageUtil.laplaceBiggestValue = 0;
