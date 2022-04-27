@@ -35,7 +35,7 @@ public class AutoFocusUtil {
         ImageUtil.laplaceBiggestCount = 0;
         Handler handlerAdjust = new Handler();
         //foreword
-        MotorUtil.setMotorForeword();
+        MotorUtil.setMotorBackward();
 //        handlerAdjust.postDelayed(new closeHandler(), 2500); // 调整整个过程2.5秒，closeHandler()
         try {
             Thread.sleep(MotorUtil.routeTotalTime);
@@ -66,7 +66,7 @@ public class AutoFocusUtil {
         Log.d("HBK", "按比例回转到对应的位置");
         //backward
         Handler handlerBackAdj = new Handler();
-        MotorUtil.setMotorBackward();
+        MotorUtil.setMotorForeword();
         // 回调n秒
         // handlerAdjust.postDelayed(new closeHandler(), (ImageUtil.laplaceBiggestCount / maxCount * 2500));
         try {

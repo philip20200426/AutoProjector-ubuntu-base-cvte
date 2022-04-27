@@ -25,10 +25,10 @@ public class MotorUtil {
         //foreword
         if(CVT_EN_REMOTE_CONTROL_FOCUS){
             writeSys(MANUAL_MOTOR_NODE, PLUS_VALUE);
-            routeTotalTime = 10500;
+            routeTotalTime = 7000;//10500;
         }else{
-            writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
-            writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_ON);
+            writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_ON);
+            writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
             routeTotalTime = 2400;
         }
     }
@@ -38,8 +38,8 @@ public class MotorUtil {
         if (CVT_EN_REMOTE_CONTROL_FOCUS) {
             writeSys(MANUAL_MOTOR_NODE, REDUCE_VALUE);
         } else {
-            writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_ON);
-            writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
+            writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
+            writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_ON);
         }
     }
 
