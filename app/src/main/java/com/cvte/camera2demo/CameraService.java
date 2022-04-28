@@ -6,6 +6,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
@@ -47,8 +48,11 @@ import static org.opencv.core.Core.mean;
 
 public class CameraService extends Service {
     private Camera2Helper mCamera2Helper;
+    private ShowPattern mShowPattern;
     private long mLastTime = -1L;
 
+    private Context mContext;
+    Handler mHandler = new Handler();
     public CameraService() {
     }
 
@@ -146,23 +150,34 @@ public class CameraService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
+        mContext = this.getApplicationContext();
+        mShowPattern = ShowPattern.getInstance(mContext);
+        mShowPattern.addView();
         startForeground();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(300);
+                    // 1. 将马达转到初始位置
+                    setAutoFocusOrigin();
 
+                    // 2. 马达转动整个过程拍摄所有画面
+                    openCamera();
+                    setAutoFocusTraversal();
 
-        // 1. 将马达转到初始位置
-        setAutoFocusOrigin();
+                    // 3. 找出清晰度最大值下标以及总共有多少张图片，并计算得出最清晰（最大值）的画面时间在整个马达转动过程中的哪个位置
+                    calculateAutoFocusLaplaceMax();
 
-        // 2. 马达转动整个过程拍摄所有画面
-        openCamera();
-        setAutoFocusTraversal();
-
-        // 3. 找出清晰度最大值下标以及总共有多少张图片，并计算得出最清晰（最大值）的画面时间在整个马达转动过程中的哪个位置
-        calculateAutoFocusLaplaceMax();
-
-        // 4. 按比例回转到对应的位置
-        setAutoFocusToPosition();
-        mCamera2Helper.closeCamera();
+                    // 4. 按比例回转到对应的位置
+                    setAutoFocusToPosition();
+                    mCamera2Helper.closeCamera();
+                    mShowPattern.removeView();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
 
         // 9.0以后 START_STICKY不能直接安装
         return START_STICKY;

@@ -14,9 +14,7 @@ public class AutoFocusUtil {
         ImageUtil.laplaceCounter = 0;
         ImageUtil.laplaceBiggestValue = 0;
         ImageUtil.laplaceBiggestCount = 0;
-        Handler handlerBegin = new Handler();
         MotorUtil.setMotorForeword();
-//        handlerBegin.postDelayed(new closeHandler(), 2600); // 延迟3秒，closeHandler()
         ImageUtil.cleanLaplaceValue();
         try {
             Thread.sleep(MotorUtil.routeTotalTime);
@@ -33,10 +31,7 @@ public class AutoFocusUtil {
         ImageUtil.laplaceCounter = 0;
         ImageUtil.laplaceBiggestValue = 0;
         ImageUtil.laplaceBiggestCount = 0;
-        Handler handlerAdjust = new Handler();
-        //foreword
         MotorUtil.setMotorBackward();
-//        handlerAdjust.postDelayed(new closeHandler(), 2500); // 调整整个过程2.5秒，closeHandler()
         try {
             Thread.sleep(MotorUtil.routeTotalTime);
         } catch (InterruptedException e) {
@@ -64,8 +59,6 @@ public class AutoFocusUtil {
 
     public static void setAutoFocusToPosition() {
         Log.d("HBK", "按比例回转到对应的位置");
-        //backward
-        Handler handlerBackAdj = new Handler();
         MotorUtil.setMotorForeword();
         // 回调n秒
         // handlerAdjust.postDelayed(new closeHandler(), (ImageUtil.laplaceBiggestCount / maxCount * 2500));
