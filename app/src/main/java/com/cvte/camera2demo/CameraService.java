@@ -20,6 +20,7 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import com.cvte.adapter.android.os.SystemPropertiesAdapter;
+import com.cvte.camera2demo.util.AutoFocusUtil;
 import com.cvte.camera2demo.util.ImageUtil;
 import com.cvte.camera2demo.util.LogUtil;
 import com.cvte.camera2demo.util.MotorUtil;
@@ -40,10 +41,6 @@ import java.io.OutputStream;
 import java.util.Map;
 
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
-import static com.cvte.camera2demo.util.AutoFocusUtil.calculateAutoFocusLaplaceMax;
-import static com.cvte.camera2demo.util.AutoFocusUtil.setAutoFocusOrigin;
-import static com.cvte.camera2demo.util.AutoFocusUtil.setAutoFocusToPosition;
-import static com.cvte.camera2demo.util.AutoFocusUtil.setAutoFocusTraversal;
 import static org.opencv.core.Core.mean;
 
 public class CameraService extends Service {
@@ -160,19 +157,24 @@ public class CameraService extends Service {
                 try {
                     Thread.sleep(300);
                     // 1. 将马达转到初始位置
-                    setAutoFocusOrigin();
+                    AutoFocusUtil.setAutoFocusOrigin();
 
                     // 2. 马达转动整个过程拍摄所有画面
                     openCamera();
-                    setAutoFocusTraversal();
+                    AutoFocusUtil.setAutoFocusTraversal();
 
                     // 3. 找出清晰度最大值下标以及总共有多少张图片，并计算得出最清晰（最大值）的画面时间在整个马达转动过程中的哪个位置
-                    calculateAutoFocusLaplaceMax();
+                    AutoFocusUtil.calculateAutoFocusLaplaceMax();
 
                     // 4. 按比例回转到对应的位置
-                    setAutoFocusToPosition();
-                    mCamera2Helper.closeCamera();
+                    AutoFocusUtil.setAutoFocusToPosition();
+
+                    // 5. 保存自动校正照片到指定路径
+                    AutoFocusUtil.saveAutoFocusFinishedToKeystone();
+
+                    // 6. 关闭pattern和摄像头
                     mShowPattern.removeView();
+                    mCamera2Helper.closeCamera();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

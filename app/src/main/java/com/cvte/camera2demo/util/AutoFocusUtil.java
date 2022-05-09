@@ -82,4 +82,8 @@ public class AutoFocusUtil {
         SystemPropertiesAdapter.set("persist.cvte.AUTO_PROJECTOR_ALLOW","1");
     }
 
+    public static void saveAutoFocusFinishedToKeystone() {
+        ImageUtil.AutoFocusFinishedToKeystone = true;
+    }
+
 }

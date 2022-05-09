@@ -420,7 +420,10 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
                     // 计算拉普拉斯清晰度
                     toClarityByOpenCV(bitmap);
                     // 保存到本地
-                    // ImageUtil.saveBitmap(SystemClock.uptimeMillis() + "HBK.jpg", bitmap);
+                    if(ImageUtil.AutoFocusFinishedToKeystone){
+                        ImageUtil.saveBmp(ImageUtil.KeystoneBmp, bitmap);
+                        ImageUtil.AutoFocusFinishedToKeystone = false;
+                    }
 
                     if (mCameraListener != null) {
                         mCameraListener.onCaptureComplete(bitmap, null);
