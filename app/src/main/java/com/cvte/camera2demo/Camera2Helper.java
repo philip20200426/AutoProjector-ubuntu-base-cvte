@@ -29,6 +29,7 @@ import androidx.annotation.NonNull;
 
 import com.cvte.camera2demo.util.ImageUtil;
 import com.cvte.camera2demo.util.LogUtil;
+import com.cvte.camera2demo.util.MotorUtil;
 
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
@@ -77,6 +78,17 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
 
     public Camera2Helper(OnCameraListener cameraListener) {
         mCameraListener = cameraListener;
+        initImageSize();
+    }
+
+    private void initImageSize(){
+        if(MotorUtil.CVT_EN_REMOTE_CONTROL_FOCUS) {
+            SIZE_WIDTH = 1280;
+            SIZE_HEIGHT = 720;
+        } else {
+            SIZE_WIDTH = 640;
+            SIZE_HEIGHT = 480;
+        }
     }
 
     private void startBackgroundThread() {
@@ -195,7 +207,7 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
         }
 
 
-        mPreviewSize = new Size(640, 480);
+        mPreviewSize = new Size(SIZE_WIDTH, SIZE_HEIGHT);
 //        mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class));
         SIZE_WIDTH = mPreviewSize.getWidth();
         SIZE_HEIGHT = mPreviewSize.getHeight();
