@@ -1,29 +1,24 @@
 package com.cvte.camera2demo;
 
-import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
-import com.cvte.adapter.android.os.SystemPropertiesAdapter;
 import com.cvte.camera2demo.util.AutoFocusUtil;
 import com.cvte.camera2demo.util.ImageUtil;
 import com.cvte.camera2demo.util.LogUtil;
-import com.cvte.camera2demo.util.MotorUtil;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -32,13 +27,9 @@ import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
-import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.util.Map;
 
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static org.opencv.core.Core.mean;
@@ -50,6 +41,8 @@ public class CameraService extends Service {
 
     private Context mContext;
     Handler mHandler = new Handler();
+    private int mTakePicCount = 0;
+    private final int LIMIT_TAKE_PIC = 5;
 
     public CameraService() {
     }
@@ -125,12 +118,66 @@ public class CameraService extends Service {
                         LogUtil.d(bitmap.toString() + " get bitmap duration = " + (now - mLastTime));
                     }
                     mLastTime = now;
+                    LogUtil.d("time   11");
+                    // 计算拉普拉斯清晰度
+                    toClarityByOpenCV(bitmap);
+                    // 保存到本地
+                    if (ImageUtil.AutoFocusFinishedToKeystone) {
+                        String name = "n0" + (mTakePicCount) + ".bmp";
+                        if (mTakePicCount != 0) {
+                            ImageUtil.saveBmp(name, bitmap);
+                        }
+                        mTakePicCount++;
+                        if (mTakePicCount > LIMIT_TAKE_PIC) {
+                            ImageUtil.AutoFocusFinishedToKeystone = false;
+
+                            showPattern2();
+                            mHandler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    ImageUtil.KeystonePositiveFinishedToNegative = true;
+                                    mTakePicCount = 0;
+                                }
+                            }, 500);
+                        }
+                    } else if (ImageUtil.KeystonePositiveFinishedToNegative) {
+                        String name = "p0" + (mTakePicCount) + ".bmp";
+
+                        if (mTakePicCount != 0) {
+                            ImageUtil.saveBmp(name, bitmap);
+                        }
+                        mTakePicCount++;
+                        if (mTakePicCount > LIMIT_TAKE_PIC) {
+                            ImageUtil.KeystonePositiveFinishedToNegative = false;
+                            mHandler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // 6. 关闭pattern和摄像头
+                                    Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
+                                    mContext.sendBroadcast(mIntent);
+
+
+                                    mShowPattern.hidePattern2(mContext);
+                                    mCamera2Helper.closeCamera();
+                                }
+                            }, 9000);
+                        }
+                    }
 
                 }
             });
         }
 
         mCamera2Helper.openCamera(this);
+    }
+
+    private void showPattern2() {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mShowPattern.showPattern2(mContext);
+            }
+        });
     }
 
 
@@ -150,6 +197,7 @@ public class CameraService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         mContext = this.getApplicationContext();
         mShowPattern = ShowPattern.getInstance(mContext);
+        mShowPattern.removeAllView();
         mShowPattern.addView();
         startForeground();
         new Thread(new Runnable() {
@@ -171,26 +219,10 @@ public class CameraService extends Service {
                     AutoFocusUtil.setAutoFocusToPosition();
 
                     // 5. 保存自动校正照片到指定路径
-                    AutoFocusUtil.saveAutoFocusFinishedToKeystone();
+                    mTakePicCount = 0;
+                    ImageUtil.AutoFocusFinishedToKeystone = true;
 
-                    // 6. 关闭pattern和摄像头
-                    Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
-                    mContext.sendBroadcast(mIntent);
 
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            mShowPattern.showPattern2(mContext);
-//                            mShowPattern.removeView();
-                            mHandler.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    mShowPattern.hidePattern2(mContext);
-                                }
-                            },1000);
-                        }
-                    });
-                    mCamera2Helper.closeCamera();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -198,8 +230,39 @@ public class CameraService extends Service {
         }).start();
 
         // 9.0以后 START_STICKY不能直接安装
-        return START_STICKY;
-//        return START_NOT_STICKY;
+//        return START_STICKY;
+        return START_NOT_STICKY;
+    }
+
+
+    /*****************************************
+     * function：灰度化计算清晰度
+     * @param srcBitmap 需要计算的图片
+     * @return Bitmap
+     *****************************************/
+    public Bitmap toClarityByOpenCV(Bitmap srcBitmap) {
+        int kernel_size = 3;
+        int ddepth = CvType.CV_16U;
+
+
+        Mat mat = new Mat();
+
+        Utils.bitmapToMat(srcBitmap, mat);
+        Mat grayMat = new Mat();
+        Imgproc.cvtColor(mat, grayMat, Imgproc.COLOR_BGRA2GRAY, 1);
+        Mat resizeMat = new Mat();
+        Imgproc.resize(grayMat, resizeMat, new org.opencv.core.Size(512, 512));
+        Mat lapMat = new Mat();
+        Imgproc.Laplacian(resizeMat, lapMat, ddepth, kernel_size);
+        Scalar mean = mean(lapMat);
+        double value = mean.val[0];
+        Log.d("HBK", "Clarity Value:" + value);
+        ImageUtil.laplaceValue[ImageUtil.laplaceCounter] = value;
+        ImageUtil.laplaceCounter = ImageUtil.laplaceCounter + 1;
+
+        Utils.matToBitmap(grayMat, srcBitmap);
+
+        return srcBitmap;
     }
 
 }

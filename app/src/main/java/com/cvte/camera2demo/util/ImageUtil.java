@@ -488,7 +488,7 @@ public class ImageUtil {
             // 存储文件名
             Log.d("HBK","Ready to save picture");
             //指定我们想要存储文件的地址
-            String TargetPath = "/sdcard/Pictures/";
+            String TargetPath = "/sdcard/DCIM/";
             Log.d("HBK","Save Path=" + TargetPath);
 
             File fileDir = new File(TargetPath);
@@ -599,6 +599,7 @@ public class ImageUtil {
     }
 
     public static boolean AutoFocusFinishedToKeystone = false;
+    public static boolean KeystonePositiveFinishedToNegative = false;
     public static String KeystoneBmp = "pattern_01.bmp";
 
 }

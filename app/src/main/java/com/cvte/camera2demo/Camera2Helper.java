@@ -49,8 +49,8 @@ import static org.opencv.core.Core.mean;
 public class Camera2Helper implements ImageReader.OnImageAvailableListener {
     private static final String TAG = "Camera2Helper";
     private static final int SUPPORT_WIDTH_MIN = 1280;
-    public  static int SIZE_WIDTH = 1920;
-    public  static int SIZE_HEIGHT = 1080;
+    public static int SIZE_WIDTH = 1920;
+    public static int SIZE_HEIGHT = 1080;
 
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
 
@@ -81,8 +81,8 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
         initImageSize();
     }
 
-    private void initImageSize(){
-        if(MotorUtil.CVT_EN_REMOTE_CONTROL_FOCUS) {
+    private void initImageSize() {
+        if (MotorUtil.CVT_EN_REMOTE_CONTROL_FOCUS) {
             SIZE_WIDTH = 1280;
             SIZE_HEIGHT = 720;
         } else {
@@ -396,7 +396,7 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
 //            Range<Integer> fpsRange = mFpsRanges[mFpsRanges.length - 1];
             Range<Integer> fpsRange = mFpsRanges[0];
             builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
-            LogUtil.d("set fps range = "+fpsRange.toString());
+            LogUtil.d("set fps range = " + fpsRange.toString());
 
         }
         builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
@@ -429,13 +429,6 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
                 public void run() {
                     // bitmap
                     Bitmap bitmap = ImageUtil.nv21ToBitmap1(yuv, SIZE_WIDTH, SIZE_HEIGHT);
-                    // 计算拉普拉斯清晰度
-                    toClarityByOpenCV(bitmap);
-                    // 保存到本地
-                    if(ImageUtil.AutoFocusFinishedToKeystone){
-                        ImageUtil.saveBmp(ImageUtil.KeystoneBmp, bitmap);
-                        ImageUtil.AutoFocusFinishedToKeystone = false;
-                    }
 
                     if (mCameraListener != null) {
                         mCameraListener.onCaptureComplete(bitmap, null);
@@ -452,36 +445,6 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
         void onCameraError(int error);
 
         void onCaptureComplete(Bitmap bitmap, File file);
-    }
-
-    /*****************************************
-     * function：灰度化计算清晰度
-     * @param srcBitmap 需要计算的图片
-     * @return Bitmap
-     *****************************************/
-    public Bitmap toClarityByOpenCV(Bitmap srcBitmap){
-        int kernel_size = 3;
-        int ddepth = CvType.CV_16U;
-
-
-        Mat mat = new Mat();
-
-        Utils.bitmapToMat(srcBitmap,mat);
-        Mat grayMat = new Mat();
-        Imgproc.cvtColor(mat, grayMat, Imgproc.COLOR_BGRA2GRAY, 1);
-        Mat resizeMat = new Mat();
-        Imgproc.resize(grayMat,resizeMat,new org.opencv.core.Size(512, 512));
-        Mat lapMat = new Mat();
-        Imgproc.Laplacian(resizeMat,lapMat,ddepth,kernel_size);
-        Scalar mean = mean(lapMat);
-        double value = mean.val[0];
-        Log.d("HBK","Clarity Value:" + value);
-        ImageUtil.laplaceValue[ImageUtil.laplaceCounter] = value;
-        ImageUtil.laplaceCounter = ImageUtil.laplaceCounter + 1;
-
-        Utils.matToBitmap(grayMat,srcBitmap);
-
-        return srcBitmap;
     }
 
 

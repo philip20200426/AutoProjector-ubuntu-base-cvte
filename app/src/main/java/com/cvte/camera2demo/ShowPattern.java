@@ -25,6 +25,7 @@ public class ShowPattern {
         }
         return mInstance;
     }
+
     public ShowPattern(Context context) {
         mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         mWindowContainer = (ViewGroup) LayoutInflater.from(context).inflate(R.layout.showpattern, null);
@@ -37,17 +38,34 @@ public class ShowPattern {
 
     public void addView() {
 
-        try{
-            mWindowManager.addView(mWindowContainer,mParams);
+        try {
+            mWindowManager.addView(mWindowContainer, mParams);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
 
     }
+
+    public void removeAllView() {
+        try {
+            if (mWindowContainer != null && mWindowContainer.isAttachedToWindow()) {
+                mWindowManager.removeView(mWindowContainer);
+            }
+            if (mWindowContainer2 != null && mWindowContainer2.isAttachedToWindow()) {
+                mWindowManager.removeView(mWindowContainer2);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
     public void removeView() {
-        try{
-            mWindowManager.removeView(mWindowContainer);
+        try {
+            if (mWindowContainer.isAttachedToWindow()) {
+                mWindowManager.removeView(mWindowContainer);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -60,14 +78,18 @@ public class ShowPattern {
         mParams.width = WindowManager.LayoutParams.MATCH_PARENT;
         mParams.height = WindowManager.LayoutParams.MATCH_PARENT;
         mParams.format = PixelFormat.RGBA_8888;
-        mWindowManager.addView(mWindowContainer2,mParams);
+        mWindowManager.addView(mWindowContainer2, mParams);
     }
 
 
     public void hidePattern2(Context mContext) {
-        try{
-            mWindowManager.removeView(mWindowContainer);
-            mWindowManager.removeView(mWindowContainer2);
+        try {
+            if (mWindowContainer.isAttachedToWindow()) {
+                mWindowManager.removeView(mWindowContainer);
+            }
+            if (mWindowContainer2.isAttachedToWindow()) {
+                mWindowManager.removeView(mWindowContainer2);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
