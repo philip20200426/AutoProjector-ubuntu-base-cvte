@@ -173,6 +173,8 @@ public class CameraService extends Service {
                     AutoFocusUtil.saveAutoFocusFinishedToKeystone();
 
                     // 6. 关闭pattern和摄像头
+                    Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
+                    mContext.sendBroadcast(mIntent);
                     mShowPattern.removeView();
                     mCamera2Helper.closeCamera();
                 } catch (Exception e) {
