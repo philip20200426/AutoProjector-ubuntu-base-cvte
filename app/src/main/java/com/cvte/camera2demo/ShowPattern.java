@@ -12,6 +12,7 @@ public class ShowPattern {
     private final ViewGroup mWindowContainer;
     private final WindowManager.LayoutParams mParams;
     private static ShowPattern mInstance;
+    private ViewGroup mWindowContainer2;
 
     public static ShowPattern getInstance(Context context) {
 
@@ -53,4 +54,23 @@ public class ShowPattern {
 
     }
 
+    public void showPattern2(Context context) {
+        mWindowContainer2 = (ViewGroup) LayoutInflater.from(context).inflate(R.layout.showpattern2, null);
+        mParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
+        mParams.width = WindowManager.LayoutParams.MATCH_PARENT;
+        mParams.height = WindowManager.LayoutParams.MATCH_PARENT;
+        mParams.format = PixelFormat.RGBA_8888;
+        mWindowManager.addView(mWindowContainer2,mParams);
+    }
+
+
+    public void hidePattern2(Context mContext) {
+        try{
+            mWindowManager.removeView(mWindowContainer);
+            mWindowManager.removeView(mWindowContainer2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
 }

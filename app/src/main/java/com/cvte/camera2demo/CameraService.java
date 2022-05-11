@@ -50,6 +50,7 @@ public class CameraService extends Service {
 
     private Context mContext;
     Handler mHandler = new Handler();
+
     public CameraService() {
     }
 
@@ -175,7 +176,20 @@ public class CameraService extends Service {
                     // 6. 关闭pattern和摄像头
                     Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
                     mContext.sendBroadcast(mIntent);
-                    mShowPattern.removeView();
+
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            mShowPattern.showPattern2(mContext);
+//                            mShowPattern.removeView();
+                            mHandler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mShowPattern.hidePattern2(mContext);
+                                }
+                            },1000);
+                        }
+                    });
                     mCamera2Helper.closeCamera();
                 } catch (Exception e) {
                     e.printStackTrace();
