@@ -8,6 +8,6 @@
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:src="@drawable/pattern_01"
-        android:id="@+id/pattern_01" />
+        android:src="@drawable/pattern_02"
+        android:id="@+id/pattern_02" />
 </FrameLayout>
