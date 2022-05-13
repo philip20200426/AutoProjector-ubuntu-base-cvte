@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import com.cvte.adapter.android.os.SystemPropertiesAdapter;
 import com.cvte.camera2demo.util.AutoFocusUtil;
 import com.cvte.camera2demo.util.ImageUtil;
 import com.cvte.camera2demo.util.LogUtil;
@@ -42,7 +43,9 @@ public class CameraService extends Service {
     private Context mContext;
     Handler mHandler = new Handler();
     private int mTakePicCount = 0;
-    private final int LIMIT_TAKE_PIC = 5;
+    private final int LIMIT_TAKE_PIC = 1;
+    private boolean isStart = false;
+    private Runnable mOverTimeRunnable;
 
     public CameraService() {
     }
@@ -102,13 +105,13 @@ public class CameraService extends Service {
             mCamera2Helper = new Camera2Helper(new Camera2Helper.OnCameraListener() {
                 @Override
                 public void onCameraStarted() {
-
+                    removeLocalImgs();
                 }
 
 
                 @Override
                 public void onCameraError(int error) {
-
+                    mShowPattern.removeAllView();
                 }
 
                 @Override
@@ -123,15 +126,17 @@ public class CameraService extends Service {
                     toClarityByOpenCV(bitmap);
                     // 保存到本地
                     if (ImageUtil.AutoFocusFinishedToKeystone) {
-                        String name = "n0" + (mTakePicCount) + ".bmp";
+                        String name = "n0" + (mTakePicCount) + ".png";
                         if (mTakePicCount != 0) {
-                            ImageUtil.saveBmp(name, bitmap);
+                            ImageUtil.saveBitmap(name, bitmap);
                         }
                         mTakePicCount++;
                         if (mTakePicCount > LIMIT_TAKE_PIC) {
                             ImageUtil.AutoFocusFinishedToKeystone = false;
 
                             showPattern2();
+
+                            //延时500ms，以免下次拍照拍的还是上次显示的图片
                             mHandler.postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
@@ -141,26 +146,27 @@ public class CameraService extends Service {
                             }, 500);
                         }
                     } else if (ImageUtil.KeystonePositiveFinishedToNegative) {
-                        String name = "p0" + (mTakePicCount) + ".bmp";
+                        String name = "p0" + (mTakePicCount) + ".png";
 
                         if (mTakePicCount != 0) {
-                            ImageUtil.saveBmp(name, bitmap);
+                            ImageUtil.saveBitmap(name, bitmap);
                         }
                         mTakePicCount++;
                         if (mTakePicCount > LIMIT_TAKE_PIC) {
                             ImageUtil.KeystonePositiveFinishedToNegative = false;
+                            // 6. 关闭pattern和摄像头
+                            Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
+                            mContext.sendBroadcast(mIntent);
+
                             mHandler.postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
-                                    // 6. 关闭pattern和摄像头
-                                    Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
-                                    mContext.sendBroadcast(mIntent);
-
-
                                     mShowPattern.hidePattern2(mContext);
                                     mCamera2Helper.closeCamera();
+                                    isStart = false;
+                                    mHandler.removeCallbacks(mOverTimeRunnable);
                                 }
-                            }, 9000);
+                            }, 2000);
                         }
                     }
 
@@ -169,6 +175,28 @@ public class CameraService extends Service {
         }
 
         mCamera2Helper.openCamera(this);
+    }
+
+    private void initKeystone() {
+        SystemPropertiesAdapter.set("vendor.mstar.test.pos_lb_offset", "0:0");
+        SystemPropertiesAdapter.set("vendor.mstar.test.pos_rb_offset", "0:0");
+        SystemPropertiesAdapter.set("vendor.mstar.test.pos_rt_offset", "0:0");
+        SystemPropertiesAdapter.set("vendor.mstar.test.pos_lt_offset", "0:1");
+    }
+
+    private void removeLocalImgs() {
+        File file = new File(ImageUtil.getmSavePath());
+        if (file.exists()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File f : files) {
+                    if (f.getName().startsWith("n0")
+                            || f.getName().startsWith("p0")) {
+                        f.delete();
+                    }
+                }
+            }
+        }
     }
 
     private void showPattern2() {
@@ -185,6 +213,7 @@ public class CameraService extends Service {
     public void onDestroy() {
         super.onDestroy();
         stopForeground();
+        LogUtil.d("onDestroy");
     }
 
     @Nullable
@@ -195,21 +224,34 @@ public class CameraService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        mContext = this.getApplicationContext();
+        LogUtil.d("onStartCommand " + intent.toString() + " isStart=" + isStart);
+        if (isStart) {
+            return super.onStartCommand(intent, flags, startId);
+        }
+        isStart = true;
+
+        mContext = CameraService.this.getApplicationContext();
         mShowPattern = ShowPattern.getInstance(mContext);
         mShowPattern.removeAllView();
         mShowPattern.addView();
+        initKeystone();
+        removeLocalImgs();
         startForeground();
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     Thread.sleep(300);
+
+                    //超时退出
+                    overtimeExit();
+
                     // 1. 将马达转到初始位置
                     AutoFocusUtil.setAutoFocusOrigin();
 
                     // 2. 马达转动整个过程拍摄所有画面
                     openCamera();
+
                     AutoFocusUtil.setAutoFocusTraversal();
 
                     // 3. 找出清晰度最大值下标以及总共有多少张图片，并计算得出最清晰（最大值）的画面时间在整个马达转动过程中的哪个位置
@@ -227,11 +269,22 @@ public class CameraService extends Service {
                     e.printStackTrace();
                 }
             }
-        }).start();
+        }, "AutoFocusThread").start();
 
-        // 9.0以后 START_STICKY不能直接安装
-//        return START_STICKY;
-        return START_NOT_STICKY;
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    private void overtimeExit() {
+        if (mOverTimeRunnable == null) {
+            mOverTimeRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    LogUtil.e("over 30 seconds,overtime exit,remove all views!");
+                    ShowPattern.getInstance(CameraService.this.getApplicationContext()).removeAllView();
+                }
+            };
+        }
+        mHandler.postDelayed(mOverTimeRunnable, 30_000);
     }
 
 

@@ -29,6 +29,7 @@ import java.nio.ReadOnlyBufferException;
  */
 public class ImageUtil {
     private static final String TAG = "ImageUtil";
+    private static final String mSavePath= "/sdcard/DCIM/";;
 
 
     public static byte[] getI420DataFromImage(Image image) {
@@ -448,20 +449,19 @@ public class ImageUtil {
     public static void saveBitmap(String name, Bitmap bitmap) {
         LogUtil.d("Ready to save picture");
         //指定我们想要存储文件的地址
-        String TargetPath = "/sdcard/images/";
-        LogUtil.d("Save Path=" + TargetPath);
+        LogUtil.d("Save Path=" + mSavePath);
         //判断指定文件夹的路径是否存在
-        File file = new File(TargetPath);
+        File file = new File(mSavePath);
         if (!file.exists()) {
-            LogUtil.d("TargetPath isn't exist");
+            LogUtil.d("mSavePath isn't exist");
             file.mkdir();
         } else {
             //如果指定文件夹创建成功，那么我们则需要进行图片存储操作
-            File saveFile = new File(TargetPath, name);
+            File saveFile = new File(mSavePath, name);
             try {
                 FileOutputStream saveImgOut = new FileOutputStream(saveFile);
                 // compress - 压缩的意思
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, saveImgOut);
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, saveImgOut);
                 //存储完成后需要清除相关的进程
                 saveImgOut.flush();
                 saveImgOut.close();
@@ -488,15 +488,14 @@ public class ImageUtil {
             // 存储文件名
             Log.d("HBK","Ready to save picture");
             //指定我们想要存储文件的地址
-            String TargetPath = "/sdcard/DCIM/";
-            Log.d("HBK","Save Path=" + TargetPath);
+            Log.d("HBK","Save Path=" + mSavePath);
 
-            File fileDir = new File(TargetPath);
+            File fileDir = new File(mSavePath);
             if (!fileDir.exists()) {
                 Log.d("HBK","TargetPath isn't exist");
                 fileDir.mkdir();
             } else {
-                String filename = TargetPath + name;
+                String filename = mSavePath + name;
                 Log.d("HBK","filename = " + filename);
                 File file = new File(filename);
                 if (!file.exists()) {
@@ -560,6 +559,10 @@ public class ImageUtil {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static String getmSavePath() {
+        return mSavePath;
     }
 
     protected static void writeWord(FileOutputStream stream, int value) throws IOException {
