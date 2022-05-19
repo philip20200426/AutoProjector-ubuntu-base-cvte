@@ -19,7 +19,11 @@ public class MotorUtil {
     public static final String REDUCE_VALUE = "SetSteptoMotor:direction=0,pwm_num=64,extend=2,";
     public static final String MOTOR_STOP = "SetSteptoMotor:direction=0,pwm_num=64,extend=0,";
     public static final Boolean CVT_EN_REMOTE_CONTROL_FOCUS = SystemPropertiesAdapter.getBoolean("ro.CVT_EN_REMOTE_CONTROL_FOCUS", false);
+    public static String steppingdDirectionValue = MOTOR_STOP;
+    public static String DCDirectionValueIOF = MANUAL_FOCUS_IO_FOREWORD_OFF;
+    public static String DCDirectionValueIOB = MANUAL_FOCUS_IO_BACKWARD_OFF;
 
+    public static int TraversalGapTime = 1000;
     public static int routeTotalTime = 0;//ms
     public static void setMotorForeword(){
         //foreword
@@ -51,6 +55,49 @@ public class MotorUtil {
             writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
             writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
         }
+    }
+
+
+    public static void setMotorTurnRound() {
+        if (CVT_EN_REMOTE_CONTROL_FOCUS) {
+            setSteppingMotorTurnRound();
+        } else {
+            setDCMotorTurnRound();
+        }
+    }
+
+    public static void setDCMotorTurnRound(){
+        if (DCDirectionValueIOF.equals(MANUAL_FOCUS_IO_FOREWORD_ON)) {
+            DCDirectionValueIOF = MANUAL_FOCUS_IO_FOREWORD_OFF;
+            DCDirectionValueIOB = MANUAL_FOCUS_IO_BACKWARD_ON;
+        } else {
+            DCDirectionValueIOF = MANUAL_FOCUS_IO_FOREWORD_ON;
+            DCDirectionValueIOB = MANUAL_FOCUS_IO_BACKWARD_OFF;
+        }
+    }
+
+    public static void setSteppingMotorTurnRound(){
+        if (steppingdDirectionValue.equals(PLUS_VALUE)) {
+            steppingdDirectionValue = REDUCE_VALUE;
+        } else {
+            steppingdDirectionValue = PLUS_VALUE;
+        }
+    }
+
+    public static void setMotorRun(){
+        //foreword
+        if(CVT_EN_REMOTE_CONTROL_FOCUS){
+            writeSys(MANUAL_MOTOR_NODE, steppingdDirectionValue);
+        }else{
+            writeSys(MANUAL_FOCUS_IO_FOREWORD, DCDirectionValueIOF);
+            writeSys(MANUAL_FOCUS_IO_BACKWARD, DCDirectionValueIOB);
+        }
+    }
+
+    public static void setMotorIOStartStatus(){
+        steppingdDirectionValue = PLUS_VALUE;
+        DCDirectionValueIOF = MANUAL_FOCUS_IO_FOREWORD_ON;
+        DCDirectionValueIOB = MANUAL_FOCUS_IO_BACKWARD_OFF;
     }
 
     /*****************************************

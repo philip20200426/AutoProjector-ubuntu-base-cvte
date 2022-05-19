@@ -20,6 +20,7 @@ import com.cvte.adapter.android.os.SystemPropertiesAdapter;
 import com.cvte.camera2demo.util.AutoFocusUtil;
 import com.cvte.camera2demo.util.ImageUtil;
 import com.cvte.camera2demo.util.LogUtil;
+import com.cvte.camera2demo.util.MotorUtil;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -46,6 +47,7 @@ public class CameraService extends Service {
     private final int LIMIT_TAKE_PIC = 1;
     private boolean isStart = false;
     private Runnable mOverTimeRunnable;
+    public static final Boolean CVT_EN_AUTO_FOCUS_APPROACH = SystemPropertiesAdapter.getBoolean("ro.CVT_EN_AUTO_FOCUS_APPROACH", false);
 
     public CameraService() {
     }
@@ -246,19 +248,64 @@ public class CameraService extends Service {
                     //超时退出
                     overtimeExit();
 
-                    // 1. 将马达转到初始位置
-                    AutoFocusUtil.setAutoFocusOrigin();
+                    if (CVT_EN_AUTO_FOCUS_APPROACH)
+                    {
+                        // 1. 设置状态机初始状态
+                        Log.d("HBK-GAP","GAP-设置状态机初始状态");
+                        AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_INCREASE;
+                        MotorUtil.setMotorIOStartStatus();
+                        openCamera();
+                        // 2. 进入逐次逼近状态机，找到最佳位置
+                        while(AutoFocusUtil.autoFocusState != AutoFocusUtil.AUTO_FOCUS_FINISHED_TO_EXIT) {
+                            switch (AutoFocusUtil.autoFocusState) {
+                                case AutoFocusUtil.AUTO_FOCUS_INCREASE: {
+                                    //跑1s，拍照，计算拉普拉斯值
+                                    Log.d("HBK-GAP","GAP-AUTO_FOCUS_INCREASE");
+                                    AutoFocusUtil.setAutoFocusGapTraversal();
+                                    break;
+                                }
+                                case AutoFocusUtil.AUTO_FOCUS_TURN_ROUND: {
+                                    Log.d("HBK-GAP","GAP-AUTO_FOCUS_TURN_ROUND");
+                                    //设置方向反向
+                                    MotorUtil.setMotorTurnRound();
+		                            //跑1s，拍照，计算拉普拉斯值
+                                    AutoFocusUtil.setAutoFocusGapTraversal();
+                                    break;
+                                }
+                                case AutoFocusUtil.AUTO_FOCUS_TO_CLEAREST:{
+                                    Log.d("HBK-GAP","GAP-AUTO_FOCUS_TO_CLEAREST");
+                                    //算出最大值的位置，回到最大值
+                                    AutoFocusUtil.setAutoFocusToGapPosition();
 
-                    // 2. 马达转动整个过程拍摄所有画面
-                    openCamera();
+                                    //设置状态机结束，退出
+                                    AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_FINISHED_TO_EXIT;
+                                    break;
+                                }
+                                default:{
+                                    //无状态，退出
+                                    AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_FINISHED_TO_EXIT;
+                                    break;
+                                }
+                            }
+                        }
+                        // 3.清除状态机位置
+                        AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_NULL;
 
-                    AutoFocusUtil.setAutoFocusTraversal();
+                    } else {
+                        // 1. 将马达转到初始位置
+                        AutoFocusUtil.setAutoFocusOrigin();
 
-                    // 3. 找出清晰度最大值下标以及总共有多少张图片，并计算得出最清晰（最大值）的画面时间在整个马达转动过程中的哪个位置
-                    AutoFocusUtil.calculateAutoFocusLaplaceMax();
+                        // 2. 马达转动整个过程拍摄所有画面
+                        openCamera();
 
-                    // 4. 按比例回转到对应的位置
-                    AutoFocusUtil.setAutoFocusToPosition();
+                        AutoFocusUtil.setAutoFocusTraversal();
+
+                        // 3. 找出清晰度最大值下标以及总共有多少张图片，并计算得出最清晰（最大值）的画面时间在整个马达转动过程中的哪个位置
+                        AutoFocusUtil.calculateAutoFocusLaplaceMax();
+
+                        // 4. 按比例回转到对应的位置
+                        AutoFocusUtil.setAutoFocusToPosition();
+                    }
 
                     // 5. 保存自动校正照片到指定路径
                     mTakePicCount = 0;
@@ -310,6 +357,7 @@ public class CameraService extends Service {
         Scalar mean = mean(lapMat);
         double value = mean.val[0];
         Log.d("HBK", "Clarity Value:" + value);
+        Log.d("HBK-GAP", "Clarity Value:[" + ImageUtil.laplaceCounter + "]" + value);
         ImageUtil.laplaceValue[ImageUtil.laplaceCounter] = value;
         ImageUtil.laplaceCounter = ImageUtil.laplaceCounter + 1;
 
