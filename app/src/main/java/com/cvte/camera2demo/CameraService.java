@@ -255,6 +255,7 @@ public class CameraService extends Service {
                         AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_INCREASE;
                         MotorUtil.setMotorIOStartStatus();
                         openCamera();
+                        Thread.sleep(500);
                         // 2. 进入逐次逼近状态机，找到最佳位置
                         while(AutoFocusUtil.autoFocusState != AutoFocusUtil.AUTO_FOCUS_FINISHED_TO_EXIT) {
                             switch (AutoFocusUtil.autoFocusState) {
@@ -274,6 +275,8 @@ public class CameraService extends Service {
                                 }
                                 case AutoFocusUtil.AUTO_FOCUS_TO_CLEAREST:{
                                     Log.d("HBK-GAP","GAP-AUTO_FOCUS_TO_CLEAREST");
+                                    //设置方向反向(回转)
+                                    MotorUtil.setMotorTurnRound();
                                     //算出最大值的位置，回到最大值
                                     AutoFocusUtil.setAutoFocusToGapPosition();
 
@@ -356,7 +359,7 @@ public class CameraService extends Service {
         Imgproc.Laplacian(resizeMat, lapMat, ddepth, kernel_size);
         Scalar mean = mean(lapMat);
         double value = mean.val[0];
-        Log.d("HBK", "Clarity Value:" + value);
+        Log.d("HBK", "Clarity Value:[" + ImageUtil.laplaceCounter + "]" + value);
         Log.d("HBK-GAP", "Clarity Value:[" + ImageUtil.laplaceCounter + "]" + value);
         ImageUtil.laplaceValue[ImageUtil.laplaceCounter] = value;
         ImageUtil.laplaceCounter = ImageUtil.laplaceCounter + 1;

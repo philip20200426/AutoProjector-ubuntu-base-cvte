@@ -110,7 +110,7 @@ public class AutoFocusUtil {
         Log.d("HBK-GAP","ImageUtil.laplaceMaxCount = " + ImageUtil.laplaceMaxCount);
         //计算并判断此次采集的数据是否递增，设置状态机下一个状态
         calculateAutoFocusLaplaceGapMax();
-
+        calculateAutoFocusLaplaceGapStandardDeviation();
         Log.d("HBK-GAP","ImageUtil.laplaceBiggestCount = " + ImageUtil.laplaceBiggestCount);
         Log.d("HBK-GAP","ImageUtil.laplaceMaxCount = " + ImageUtil.laplaceMaxCount);
 
@@ -121,6 +121,10 @@ public class AutoFocusUtil {
         } else {
             autoFocusState = AUTO_FOCUS_TO_CLEAREST;
         }
+
+        //清除标准差计算过程值
+        ImageUtil.laplaceGapStandardDeviation = 0;
+        ImageUtil.laplaceGapValueSum = 0;
         Log.d("HBK-GAP","autoFocusState = " + autoFocusState);
     }
 
@@ -128,6 +132,10 @@ public class AutoFocusUtil {
         // 3. 找出清晰度最大值下标以及总共有多少张图片，并计算得出最清晰（最大值）的画面时间在整个马达转动过程中的哪个位置
         Log.d("HBK-GAP", "计算最大清晰位置");
         for (int i = 0; i < ImageUtil.laplaceMaxCount; i++) {
+            //计算总和，方便后续计算方差
+            ImageUtil.laplaceGapValueSum = ImageUtil.laplaceGapValueSum + ImageUtil.laplaceValue[i];
+
+            //找出最大值
             if (ImageUtil.laplaceBiggestValue < ImageUtil.laplaceValue[i]) {
                 ImageUtil.laplaceBiggestValue = ImageUtil.laplaceValue[i];
                 ImageUtil.laplaceBiggestCount = i;
@@ -137,9 +145,23 @@ public class AutoFocusUtil {
         Log.d("HBK-GAP", "Adjust back millisecond : " + (MotorUtil.TraversalGapTime - ImageUtil.laplaceBiggestCount * MotorUtil.TraversalGapTime / ImageUtil.laplaceMaxCount));
     }
 
+    //方差s^2=[(x1-x)^2 +...(xn-x)^2]/n 或者s^2=[(x1-x)^2 +...(xn-x)^2]/(n-1)
+    //标准差σ=sqrt(s^2)
+    public static void calculateAutoFocusLaplaceGapStandardDeviation() {
+        double laplaceGapVariance = 0;
+        double laplaceGapValueAverage = 0;
+        laplaceGapValueAverage = ImageUtil.laplaceGapValueSum/ImageUtil.laplaceMaxCount;
+        for(int i=0; i<ImageUtil.laplaceMaxCount; i++){//求方差
+            laplaceGapVariance+=(ImageUtil.laplaceValue[i]-laplaceGapValueAverage)*(ImageUtil.laplaceValue[i]-laplaceGapValueAverage);
+        }
+
+        ImageUtil.laplaceGapStandardDeviation =  Math.sqrt(laplaceGapVariance/ImageUtil.laplaceMaxCount);
+        Log.d("HBK-GAP","Variance: " + laplaceGapVariance + ",StandardDeviation: " + ImageUtil.laplaceGapStandardDeviation);
+    }
+
     public static void setAutoFocusToGapPosition() {
         Log.d("HBK", "按比例回转到对应的位置");
-        MotorUtil.setMotorForeword();
+        MotorUtil.setMotorRun();
         // 回调n秒
         // handlerAdjust.postDelayed(new closeHandler(), (ImageUtil.laplaceBiggestCount / maxCount * 2500));
         try {

@@ -605,4 +605,9 @@ public class ImageUtil {
     public static boolean KeystonePositiveFinishedToNegative = false;
     public static String KeystoneBmp = "pattern_01.bmp";
 
+    //标准差计算
+    public static double laplaceGapStandardDeviation = 0;
+    public static double laplaceGapValueSum = 0;
+
+
 }
