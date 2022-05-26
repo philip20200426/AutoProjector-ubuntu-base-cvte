@@ -12,6 +12,7 @@ public class AutoFocusUtil {
     public static final int AUTO_FOCUS_INCREASE = 2;
     public static final int AUTO_FOCUS_TURN_ROUND = 3;
     public static final int AUTO_FOCUS_TO_CLEAREST = 4;
+    public static final int AUTO_FOCUS_TO_CLEAREST_CHECK = 5;
     public static int autoFocusState = AUTO_FOCUS_INCREASE;
 
     public static void setAutoFocusOrigin() {
@@ -107,19 +108,41 @@ public class AutoFocusUtil {
         MotorUtil.setMotorStop();
         Log.d("HBK-GAP","GAP-拍摄过程stop");
         ImageUtil.laplaceMaxCount = ImageUtil.laplaceCounter;
-        Log.d("HBK-GAP","ImageUtil.laplaceMaxCount = " + ImageUtil.laplaceMaxCount);
+        Log.d("HBK-GAP","[Traversal] laplaceMaxCount = " + ImageUtil.laplaceMaxCount);
         //计算并判断此次采集的数据是否递增，设置状态机下一个状态
         calculateAutoFocusLaplaceGapMax();
-        calculateAutoFocusLaplaceGapStandardDeviation();
-        Log.d("HBK-GAP","ImageUtil.laplaceBiggestCount = " + ImageUtil.laplaceBiggestCount);
-        Log.d("HBK-GAP","ImageUtil.laplaceMaxCount = " + ImageUtil.laplaceMaxCount);
+//        //计算方差
+//        calculateAutoFocusLaplaceGapStandardDeviation();
+        Log.d("HBK-GAP","[MAX]laplaceBiggestCount = " + ImageUtil.laplaceBiggestCount);
+        Log.d("HBK-GAP","[MAX]laplaceMaxCount = " + ImageUtil.laplaceMaxCount);
 
-        if(ImageUtil.laplaceBiggestCount == ImageUtil.laplaceMaxCount - 1) {
-            autoFocusState = AUTO_FOCUS_INCREASE;
-        } else if (ImageUtil.laplaceBiggestCount == 0) {
-            autoFocusState = AUTO_FOCUS_TURN_ROUND;
+
+        if(autoFocusState == AUTO_FOCUS_TO_CLEAREST_CHECK){
+            if((Math.abs(ImageUtil.laplaceMinimumCount - ImageUtil.laplaceMaxCount/2) < ImageUtil.laplaceMaxCount/3) //如果最小值在中间，则表示还没找到最清晰的值
+                    || (Math.abs(ImageUtil.laplaceBiggestCount - ImageUtil.laplaceMinimumCount) < 3)                 //如果最大值最小值相邻，则表示还没找到最清晰的值
+                    || (Math.abs(ImageUtil.laplace2thBiggestCount - ImageUtil.laplaceMinimumCount) < 3)              //如果最大值最小值相邻，则表示还没找到最清晰的值
+            ){
+                Log.d("HBK-GAP","[END END] 最小值在中间1/3区间 或者 最大值最小值相邻，还没找到最清晰的值");
+                autoFocusState = AUTO_FOCUS_TURN_ROUND;
+            } else {
+                autoFocusState = AUTO_FOCUS_TO_CLEAREST;
+            }
         } else {
-            autoFocusState = AUTO_FOCUS_TO_CLEAREST;
+            if(ImageUtil.laplaceMaxCount - ImageUtil.laplaceBiggestCount == 1) { //最后几个数有概率波动不处理
+                autoFocusState = AUTO_FOCUS_INCREASE;
+            } else if (ImageUtil.laplaceBiggestCount == 0) {//前几个数有概率波动不处理
+                autoFocusState = AUTO_FOCUS_TURN_ROUND;
+            } else {
+                if((Math.abs(ImageUtil.laplace2thBiggestCount - ImageUtil.laplaceBiggestCount) >3)                       //如果最大值和第二大值相差很远，说明数据有明显抖动
+                        || (Math.abs(ImageUtil.laplaceBiggestCount - ImageUtil.laplaceMinimumCount) < 3)                 //如果最大值和最小值相邻，则表示还没找到最清晰的值
+                        || (Math.abs(ImageUtil.laplace2thBiggestCount - ImageUtil.laplaceMinimumCount) < 3)              //如果第二大值和最小值相邻，则表示还没找到最清晰的值
+                        || (Math.abs(ImageUtil.laplaceMinimumCount - ImageUtil.laplaceMaxCount/2) < ImageUtil.laplaceMaxCount/3) //如果最小值在中间，则表示还没找到最清晰的值
+                ){
+                    autoFocusState = AUTO_FOCUS_TURN_ROUND;
+                } else {
+                    autoFocusState = AUTO_FOCUS_TO_CLEAREST_CHECK;
+                }
+            }
         }
 
         //清除标准差计算过程值
@@ -131,18 +154,28 @@ public class AutoFocusUtil {
     public static void calculateAutoFocusLaplaceGapMax() {
         // 3. 找出清晰度最大值下标以及总共有多少张图片，并计算得出最清晰（最大值）的画面时间在整个马达转动过程中的哪个位置
         Log.d("HBK-GAP", "计算最大清晰位置");
+        ImageUtil.laplaceMinimumValue = ImageUtil.laplaceValue[0];
         for (int i = 0; i < ImageUtil.laplaceMaxCount; i++) {
             //计算总和，方便后续计算方差
             ImageUtil.laplaceGapValueSum = ImageUtil.laplaceGapValueSum + ImageUtil.laplaceValue[i];
 
             //找出最大值
             if (ImageUtil.laplaceBiggestValue < ImageUtil.laplaceValue[i]) {
+                ImageUtil.laplace2thBiggestValue = ImageUtil.laplaceBiggestValue;
+                ImageUtil.laplace2thBiggestCount = ImageUtil.laplaceBiggestCount;
                 ImageUtil.laplaceBiggestValue = ImageUtil.laplaceValue[i];
                 ImageUtil.laplaceBiggestCount = i;
-                Log.d("HBK-GAP", "MAX value:" + ImageUtil.laplaceBiggestValue + " count:" + ImageUtil.laplaceBiggestCount);
+            }
+            //找出最小值
+            if(ImageUtil.laplaceMinimumValue > ImageUtil.laplaceValue[i]){
+                ImageUtil.laplaceMinimumValue = ImageUtil.laplaceValue[i];
+                ImageUtil.laplaceMinimumCount = i;
             }
         }
-        Log.d("HBK-GAP", "Adjust back millisecond : " + (MotorUtil.TraversalGapTime - ImageUtil.laplaceBiggestCount * MotorUtil.TraversalGapTime / ImageUtil.laplaceMaxCount));
+        Log.d("HBK-GAP", "[GapMax] MAX value:" + ImageUtil.laplaceBiggestValue + " count:" + ImageUtil.laplaceBiggestCount);
+        Log.d("HBK-GAP", "[GapMax] 2th MAX value:" + ImageUtil.laplace2thBiggestValue + " 2th count:" + ImageUtil.laplace2thBiggestCount);
+        Log.d("HBK-GAP", "[GapMax] MIN value:" + ImageUtil.laplaceMinimumValue + " count:" + ImageUtil.laplaceMinimumCount);
+        Log.d("HBK-GAP", "[GapMax] Adjust back millisecond : " + (MotorUtil.TraversalGapTime - ImageUtil.laplaceBiggestCount * MotorUtil.TraversalGapTime / ImageUtil.laplaceMaxCount));
     }
 
     //方差s^2=[(x1-x)^2 +...(xn-x)^2]/n 或者s^2=[(x1-x)^2 +...(xn-x)^2]/(n-1)
@@ -161,15 +194,33 @@ public class AutoFocusUtil {
 
     public static void setAutoFocusToGapPosition() {
         Log.d("HBK", "按比例回转到对应的位置");
+        //判断是否为误判
         MotorUtil.setMotorRun();
+        Log.d("HBK-GAP","[END END] 上一次最大计数" + ImageUtil.laplaceMaxCountCheck);
+        Log.d("HBK-GAP","[END END] 上一次最大值下标" + ImageUtil.laplaceBiggestCountCheck);
+        Log.d("HBK-GAP","[END END] 本次最大计数" + ImageUtil.laplaceMaxCount);
+        Log.d("HBK-GAP","[END END] 本次最大值下标" + ImageUtil.laplaceBiggestCount);
+        Log.d("HBK-GAP","CheckNum: " + (ImageUtil.laplaceMaxCountCheck - ImageUtil.laplaceBiggestCountCheck) + ",BiggestCount: " + ImageUtil.laplaceBiggestCount);
+
         // 回调n秒
         // handlerAdjust.postDelayed(new closeHandler(), (ImageUtil.laplaceBiggestCount / maxCount * 2500));
         try {
+            //Check过程中计算的回调量
+            int timeCheck = ImageUtil.laplaceBiggestCountCheck * MotorUtil.TraversalGapTime / ImageUtil.laplaceMaxCountCheck;
+            Log.d("HBK-GAP","[END END] Check过程中计算的回调量" + timeCheck);
+            if (timeCheck > MotorUtil.TraversalGapTime) {
+                timeCheck = MotorUtil.TraversalGapTime;
+            }
+
+            //确认过check OK之后，回到clearest过程的回调量
             int time = MotorUtil.TraversalGapTime - ImageUtil.laplaceBiggestCount * MotorUtil.TraversalGapTime / ImageUtil.laplaceMaxCount;
+            Log.d("HBK-GAP","[END END] clearest过程的回调量" + time);
             if (time < 0) {
                 time = 0;
             }
-            Thread.sleep(time);
+            int timeAvg = (time + timeCheck)/2;
+            Log.d("HBK-GAP","[END END] timeAvg过程的回调量" + timeAvg);
+            Thread.sleep(timeAvg);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -182,5 +233,7 @@ public class AutoFocusUtil {
         ImageUtil.laplaceBiggestCount = 0;
         ImageUtil.cleanLaplaceValue();
         SystemPropertiesAdapter.set("persist.cvte.AUTO_PROJECTOR_ALLOW","1");
+        //设置状态机结束，退出
+        AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_FINISHED_TO_EXIT;
     }
 }

@@ -168,7 +168,7 @@ public class CameraService extends Service {
                                     isStart = false;
                                     mHandler.removeCallbacks(mOverTimeRunnable);
                                 }
-                            }, 2000);
+                            }, 500);
                         }
                     }
 
@@ -261,27 +261,35 @@ public class CameraService extends Service {
                             switch (AutoFocusUtil.autoFocusState) {
                                 case AutoFocusUtil.AUTO_FOCUS_INCREASE: {
                                     //跑1s，拍照，计算拉普拉斯值
-                                    Log.d("HBK-GAP","GAP-AUTO_FOCUS_INCREASE");
+                                    Log.d("HBK-GAP","GAP-【1】递增");
                                     AutoFocusUtil.setAutoFocusGapTraversal();
                                     break;
                                 }
                                 case AutoFocusUtil.AUTO_FOCUS_TURN_ROUND: {
-                                    Log.d("HBK-GAP","GAP-AUTO_FOCUS_TURN_ROUND");
+                                    Log.d("HBK-GAP","GAP-【2】回转");
                                     //设置方向反向
                                     MotorUtil.setMotorTurnRound();
 		                            //跑1s，拍照，计算拉普拉斯值
                                     AutoFocusUtil.setAutoFocusGapTraversal();
                                     break;
                                 }
+                                case AutoFocusUtil.AUTO_FOCUS_TO_CLEAREST_CHECK:{
+                                    Log.d("HBK-GAP","GAP-【3】找到最清晰检查");
+                                    ImageUtil.laplaceBiggestValueCheck = ImageUtil.laplaceBiggestValue;
+                                    ImageUtil.laplaceBiggestCountCheck = ImageUtil.laplaceBiggestCount;
+                                    ImageUtil.laplaceMaxCountCheck = ImageUtil.laplaceMaxCount;
+                                    //设置方向反向
+                                    MotorUtil.setMotorTurnRound();
+                                    //跑1s，拍照，计算拉普拉斯值
+                                    AutoFocusUtil.setAutoFocusGapTraversal();
+                                    break;
+                                }
                                 case AutoFocusUtil.AUTO_FOCUS_TO_CLEAREST:{
-                                    Log.d("HBK-GAP","GAP-AUTO_FOCUS_TO_CLEAREST");
+                                    Log.d("HBK-GAP","GAP-【4】最清晰位置确认");
                                     //设置方向反向(回转)
                                     MotorUtil.setMotorTurnRound();
-                                    //算出最大值的位置，回到最大值
+                                    //算出最大值的位置，回到最大值，并设置状态机
                                     AutoFocusUtil.setAutoFocusToGapPosition();
-
-                                    //设置状态机结束，退出
-                                    AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_FINISHED_TO_EXIT;
                                     break;
                                 }
                                 default:{
@@ -334,7 +342,7 @@ public class CameraService extends Service {
                 }
             };
         }
-        mHandler.postDelayed(mOverTimeRunnable, 30_000);
+        mHandler.postDelayed(mOverTimeRunnable, 15_000);
     }
 
 
@@ -360,7 +368,7 @@ public class CameraService extends Service {
         Scalar mean = mean(lapMat);
         double value = mean.val[0];
         Log.d("HBK", "Clarity Value:[" + ImageUtil.laplaceCounter + "]" + value);
-        Log.d("HBK-GAP", "Clarity Value:[" + ImageUtil.laplaceCounter + "]" + value);
+        Log.d("HBK-GAP", "清晰度:[" + ImageUtil.laplaceCounter + "]" + value);
         ImageUtil.laplaceValue[ImageUtil.laplaceCounter] = value;
         ImageUtil.laplaceCounter = ImageUtil.laplaceCounter + 1;
 

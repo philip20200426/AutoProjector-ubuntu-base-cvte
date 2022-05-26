@@ -594,6 +594,13 @@ public class ImageUtil {
     public static int laplaceCounter;
     public static double laplaceBiggestValue;
     public static int laplaceBiggestCount;
+    public static double laplace2thBiggestValue = 0;
+    public static int laplace2thBiggestCount = 0;
+    public static double laplaceBiggestValueCheck = 0;
+    public static int laplaceBiggestCountCheck = 0;
+    public static double laplaceMinimumValue = 0;
+    public static int laplaceMinimumCount = 0;
+    public static int laplaceMaxCountCheck = 0;
     public static int laplaceMaxCount = 0;
     public static void cleanLaplaceValue(){
         for(int i=0; i < laplaceCounter; i++){
