@@ -180,10 +180,12 @@ public class CameraService extends Service {
     }
 
     private void initKeystone() {
-        SystemPropertiesAdapter.set("vendor.mstar.test.pos_lb_offset", "0:0");
-        SystemPropertiesAdapter.set("vendor.mstar.test.pos_rb_offset", "0:0");
-        SystemPropertiesAdapter.set("vendor.mstar.test.pos_rt_offset", "0:0");
-        SystemPropertiesAdapter.set("vendor.mstar.test.pos_lt_offset", "0:1");
+        if(SystemPropertiesAdapter.get("persist.cvte.auto_all_correction", "0").equals("1")){
+            SystemPropertiesAdapter.set("vendor.mstar.test.pos_lb_offset", "0:0");
+            SystemPropertiesAdapter.set("vendor.mstar.test.pos_rb_offset", "0:0");
+            SystemPropertiesAdapter.set("vendor.mstar.test.pos_rt_offset", "0:0");
+            SystemPropertiesAdapter.set("vendor.mstar.test.pos_lt_offset", "0:1");
+        }
     }
 
     private void removeLocalImgs() {
