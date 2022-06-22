@@ -14,10 +14,10 @@ public class MotorUtil {
     public static final String MANUAL_FOCUS_IO_BACKWARD_ON = "1";
     public static final String MANUAL_FOCUS_IO_BACKWARD_OFF = "0";
 
-    public static final String MANUAL_MOTOR_NODE = "/sys/class/pwm_in/pwm-in/pwm_in";
-    public static final String PLUS_VALUE = "SetSteptoMotor:direction=1,pwm_num=64,extend=2,";
-    public static final String REDUCE_VALUE = "SetSteptoMotor:direction=0,pwm_num=64,extend=2,";
-    public static final String MOTOR_STOP = "SetSteptoMotor:direction=0,pwm_num=64,extend=0,";
+    public static final String MANUAL_MOTOR_NODE = "sys/devices/platform/customer-AFmotor/step_set";//"/sys/class/pwm_in/pwm-in/pwm_in";
+    public static final String PLUS_VALUE = "3 3000";//"SetSteptoMotor:direction=1,pwm_num=64,extend=2,";
+    public static final String REDUCE_VALUE = "6 3000";//"SetSteptoMotor:direction=0,pwm_num=64,extend=2,";
+    public static final String MOTOR_STOP = "0 3000";//"SetSteptoMotor:direction=0,pwm_num=64,extend=0,";
     public static final Boolean CVT_EN_REMOTE_CONTROL_FOCUS = SystemPropertiesAdapter.getBoolean("ro.CVT_EN_REMOTE_CONTROL_FOCUS", false);
     public static final int CVT_DEF_STEP_MOTOR_TYPE = SystemPropertiesAdapter.getInt("ro.CVT_DEF_STEP_MOTOR_TYPE", 1);
     public static final int MOTOR_DC_WANBO = 0;

@@ -32,11 +32,17 @@ android {
 
 
     signingConfigs {
+//        android_app {
+//            keyAlias 'androiddebugkey'
+//            keyPassword 'android'
+//            storeFile file("mtk9255.keystore")
+//            storePassword 'android'
+//        }
         android_app {
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
-            storeFile file("mtk9255.keystore")
-            storePassword 'android'
+            storeFile file("T950D4.keystore")
+            storePassword "roward"
+            keyAlias 'AMLT950'
+            keyPassword "roward"
         }
     }
 

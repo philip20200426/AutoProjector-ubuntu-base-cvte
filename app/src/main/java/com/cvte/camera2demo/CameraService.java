@@ -31,7 +31,9 @@ import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static org.opencv.core.Core.mean;
@@ -145,7 +147,7 @@ public class CameraService extends Service {
                                     ImageUtil.KeystonePositiveFinishedToNegative = true;
                                     mTakePicCount = 0;
                                 }
-                            }, 500);
+                            }, 1000);
                         }
                     } else if (ImageUtil.KeystonePositiveFinishedToNegative) {
                         String name = "p0" + (mTakePicCount) + ".png";
@@ -186,6 +188,11 @@ public class CameraService extends Service {
             SystemPropertiesAdapter.set("vendor.mstar.test.pos_rt_offset", "0:0");
             SystemPropertiesAdapter.set("vendor.mstar.test.pos_lt_offset", "0:1");
         }
+        if(SystemPropertiesAdapter.get("persist.sys.auto_foucs", "0").equals("1")){
+            SystemPropertiesAdapter.set("persist.vendor.hwc.keystone", "0.0,0.0,1920.0,0.0,1920,1080,0,1080.0");
+            MySysCmd("service call SurfaceFlinger 1006");
+        }
+
     }
 
     private void removeLocalImgs() {
@@ -322,7 +329,12 @@ public class CameraService extends Service {
 
                     // 5. 保存自动校正照片到指定路径
                     mTakePicCount = 0;
-                    ImageUtil.AutoFocusFinishedToKeystone = true;
+                    mHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            ImageUtil.AutoFocusFinishedToKeystone = true;
+                        }
+                    }, 1000);
 
 
                 } catch (Exception e) {
@@ -379,4 +391,35 @@ public class CameraService extends Service {
         return srcBitmap;
     }
 
+    /*****************************************
+     * function：窗口命令执行
+     * @param command 串口命令
+     * @return void
+     *****************************************/
+    public static void MySysCmd(String command) {
+        new Thread(){
+            public void run(){
+                Process process = null;
+                try {
+                    process = Runtime.getRuntime().exec(command);
+                    BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(
+                                    process.getInputStream()));
+                    String data = "";
+                    while((data = reader.readLine()) != null) {
+                        System.out.println(data);
+                    }
+
+                    int exitValue = process.waitFor();
+
+                    if(exitValue != 0) {
+                        System.out.println("error");
+                    }
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }.start();
+    }
 }
