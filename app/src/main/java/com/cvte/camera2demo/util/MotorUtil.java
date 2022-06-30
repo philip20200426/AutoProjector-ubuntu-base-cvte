@@ -1,5 +1,7 @@
 package com.cvte.camera2demo.util;
 
+import android.util.Log;
+
 import com.cvte.adapter.android.os.SystemPropertiesAdapter;
 
 import java.io.File;
@@ -14,35 +16,122 @@ public class MotorUtil {
     public static final String MANUAL_FOCUS_IO_BACKWARD_ON = "1";
     public static final String MANUAL_FOCUS_IO_BACKWARD_OFF = "0";
 
-    public static final String MANUAL_MOTOR_NODE = "sys/devices/platform/customer-AFmotor/step_set";//"/sys/class/pwm_in/pwm-in/pwm_in";
-    public static final String PLUS_VALUE = "3 3000";//"SetSteptoMotor:direction=1,pwm_num=64,extend=2,";
-    public static final String REDUCE_VALUE = "6 3000";//"SetSteptoMotor:direction=0,pwm_num=64,extend=2,";
-    public static final String MOTOR_STOP = "0 3000";//"SetSteptoMotor:direction=0,pwm_num=64,extend=0,";
+    public static final String MANUAL_MOTOR_NODE_DEF = "/sys/class/pwm_in/pwm-in/pwm_in";
+    public static final String PLUS_VALUE_DEF = "SetSteptoMotor:direction=1,pwm_num=64,extend=2,";
+    public static final String REDUCE_VALUE_DEF = "SetSteptoMotor:direction=0,pwm_num=64,extend=2,";
+    public static final String MOTOR_STOP_DEF = "SetSteptoMotor:direction=0,pwm_num=64,extend=0,";
+    public static final String MANUAL_MOTOR_NODE_YS = "sys/devices/platform/customer-AFmotor/step_set";
+    public static final String PLUS_VALUE_YS = "5 3000";
+    public static final String REDUCE_VALUE_YS = "2 3000";
+    public static final String MOTOR_STOP_YS = "0 3000";
+    public static String MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_DEF;
+    public static String PLUS_VALUE = PLUS_VALUE_DEF;
+    public static String REDUCE_VALUE = REDUCE_VALUE_DEF;
+    public static String MOTOR_STOP = MOTOR_STOP_DEF;
     public static final Boolean CVT_EN_REMOTE_CONTROL_FOCUS = SystemPropertiesAdapter.getBoolean("ro.CVT_EN_REMOTE_CONTROL_FOCUS", false);
+    public static final Boolean CVT_EN_YISHU_FOCUS = SystemPropertiesAdapter.getBoolean("persist.sys.auto_foucs", false);
     public static final int CVT_DEF_STEP_MOTOR_TYPE = SystemPropertiesAdapter.getInt("ro.CVT_DEF_STEP_MOTOR_TYPE", 1);
     public static final int MOTOR_DC_WANBO = 0;
     public static final int MOTOR_STEP_WANBO = 1;
+    public static final int MOTOR_STEP_YS = 2;
     public static String steppingdDirectionValue = MOTOR_STOP;
     public static String DCDirectionValueIOF = MANUAL_FOCUS_IO_FOREWORD_OFF;
     public static String DCDirectionValueIOB = MANUAL_FOCUS_IO_BACKWARD_OFF;
 
-    public static int TraversalGapTime = 1000;
+    public static int TraversalGapTime = 1000;//ms
     public static int routeTotalTime = 0;//ms
+
+    public MotorUtil(){
+        initStepMotorStatus();
+    }
+
+    public static void initStepMotorStatus(){
+        Log.d("HBK-Y","initStepMotorStatus");
+        int motorType = SystemPropertiesAdapter.getInt("ro.CVT_DEF_STEP_MOTOR_TYPE", 999);
+        switch (motorType){
+            case MotorUtil.MOTOR_DC_WANBO:{
+                if(CVT_EN_YISHU_FOCUS){
+                    Log.d("HBK-Y","MOTOR_DC_YISHU");
+                    routeTotalTime = 2167;//ms
+                } else {
+                    routeTotalTime = 2400;//ms
+                }
+            }
+                break;
+            case MotorUtil.MOTOR_STEP_WANBO:{
+                MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_DEF;
+                PLUS_VALUE = PLUS_VALUE_DEF;
+                REDUCE_VALUE = REDUCE_VALUE_DEF;
+                MOTOR_STOP = MOTOR_STOP_DEF;
+                steppingdDirectionValue = MOTOR_STOP;
+                routeTotalTime = 3700;//ms
+                TraversalGapTime = 1000;//ms
+            }
+                break;
+            case MotorUtil.MOTOR_STEP_YS:{
+                MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_YS;
+                PLUS_VALUE = PLUS_VALUE_YS;
+                REDUCE_VALUE = REDUCE_VALUE_YS;
+                MOTOR_STOP = MOTOR_STOP_YS;
+                steppingdDirectionValue = MOTOR_STOP;
+                routeTotalTime = 2167;//ms
+                TraversalGapTime = 500;//ms
+            }
+                break;
+            default:{
+                if(CVT_EN_REMOTE_CONTROL_FOCUS){
+                    MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_DEF;
+                    PLUS_VALUE = PLUS_VALUE_DEF;
+                    REDUCE_VALUE = REDUCE_VALUE_DEF;
+                    MOTOR_STOP = MOTOR_STOP_DEF;
+                    steppingdDirectionValue = MOTOR_STOP;
+                    routeTotalTime = 3700;//ms
+                    TraversalGapTime = 1000;//ms
+                } else if(CVT_EN_YISHU_FOCUS) {
+                    Log.d("HBK-Y","initStepMotorStatus 一数");
+                    MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_YS;
+                    PLUS_VALUE = PLUS_VALUE_YS;
+                    REDUCE_VALUE = REDUCE_VALUE_YS;
+                    MOTOR_STOP = MOTOR_STOP_YS;
+                    steppingdDirectionValue = MOTOR_STOP;
+                    routeTotalTime = 2167;//ms
+                    TraversalGapTime = 500;//ms
+                    Log.d("HBK-Y","MOTOR_STEP_YISHU");
+                    Log.d("HBK-Y","MANUAL_MOTOR_NODE = " + MANUAL_MOTOR_NODE);
+                    Log.d("HBK-Y","PLUS_VALUE = " + PLUS_VALUE);
+                    Log.d("HBK-Y","REDUCE_VALUE = " + REDUCE_VALUE);
+                    Log.d("HBK-Y","MOTOR_STOP = " + MOTOR_STOP);
+                    Log.d("HBK-Y","routeTotalTime = " + routeTotalTime);
+                    Log.d("HBK-Y","TraversalGapTime = " + TraversalGapTime);
+                }
+            }
+                break;
+        }
+        Log.d("HBK-Y"," routeTotalTime: " + routeTotalTime);
+    }
+
+    public static boolean isStepMotor(){
+        boolean ret = false;
+        if(CVT_EN_REMOTE_CONTROL_FOCUS || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_WANBO)
+                || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_YS) || CVT_EN_YISHU_FOCUS){
+            ret = true;
+        }
+        return ret;
+    }
+
     public static void setMotorForeword(){
         //foreword
-        if(CVT_EN_REMOTE_CONTROL_FOCUS || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_WANBO)){
+        if(isStepMotor()) {
             writeSys(MANUAL_MOTOR_NODE, PLUS_VALUE);
-            routeTotalTime = 3700;//7000;//10500;
         }else{
             writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_ON);
             writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
-            routeTotalTime = 2400;
         }
     }
 
     public static void setMotorBackward() {
         //backward
-        if (CVT_EN_REMOTE_CONTROL_FOCUS || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_WANBO)) {
+        if (isStepMotor()) {
             writeSys(MANUAL_MOTOR_NODE, REDUCE_VALUE);
         } else {
             writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
@@ -52,7 +141,7 @@ public class MotorUtil {
 
     public static void setMotorStop() {
         //stop
-        if (CVT_EN_REMOTE_CONTROL_FOCUS || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_WANBO)) {
+        if (isStepMotor()) {
             writeSys(MANUAL_MOTOR_NODE, MOTOR_STOP);
         } else {
             writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_OFF);
@@ -62,7 +151,7 @@ public class MotorUtil {
 
 
     public static void setMotorTurnRound() {
-        if (CVT_EN_REMOTE_CONTROL_FOCUS || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_WANBO)) {
+        if (isStepMotor()) {
             setSteppingMotorTurnRound();
         } else {
             setDCMotorTurnRound();
@@ -89,7 +178,7 @@ public class MotorUtil {
 
     public static void setMotorRun(){
         //foreword
-        if(CVT_EN_REMOTE_CONTROL_FOCUS || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_WANBO)){
+        if(isStepMotor()){
             writeSys(MANUAL_MOTOR_NODE, steppingdDirectionValue);
         }else{
             writeSys(MANUAL_FOCUS_IO_FOREWORD, DCDirectionValueIOF);

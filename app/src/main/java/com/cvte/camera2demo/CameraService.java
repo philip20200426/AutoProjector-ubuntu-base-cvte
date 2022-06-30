@@ -169,6 +169,7 @@ public class CameraService extends Service {
                                     mCamera2Helper.closeCamera();
                                     isStart = false;
                                     mHandler.removeCallbacks(mOverTimeRunnable);
+                                    stopSelf();
                                 }
                             }, 500);
                         }
@@ -235,12 +236,14 @@ public class CameraService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        LogUtil.d("onStartCommand " + intent.toString() + " isStart=" + isStart);
+        if(intent != null){
+            LogUtil.d("onStartCommand " + intent.toString() + " isStart=" + isStart);
+        }
         if (isStart) {
             return super.onStartCommand(intent, flags, startId);
         }
         isStart = true;
-
+        MotorUtil.initStepMotorStatus();
         mContext = CameraService.this.getApplicationContext();
         mShowPattern = ShowPattern.getInstance(mContext);
         mShowPattern.removeAllView();

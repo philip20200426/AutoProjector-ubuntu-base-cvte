@@ -393,8 +393,15 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
     private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) {
         builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
         if (mFpsRanges != null) {
-//            Range<Integer> fpsRange = mFpsRanges[mFpsRanges.length - 1];
-            Range<Integer> fpsRange = mFpsRanges[0];
+            Range<Integer> fpsRange = mFpsRanges[(mFpsRanges.length - 1)];
+//            Range<Integer> fpsRange = mFpsRanges[0];
+            Log.d("HBK-FPS","mFpsRanges.length = " + mFpsRanges.length);
+            Log.d("HBK-FPS","(mFpsRanges.length - 1) = " + (mFpsRanges.length - 1));
+            Log.d("HBK-FPS","mFpsRanges[(mFpsRanges.length - 1)] = " + mFpsRanges[(mFpsRanges.length - 1)]);
+            Log.d("HBK-FPS","fpsRange = " + fpsRange);
+            for(int i = 0; i < mFpsRanges.length; i++) {
+                Log.d("HBK-FPS","mFpsRanges[" + i + "] = " + mFpsRanges[i]);
+            }
             builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
             LogUtil.d("set fps range = " + fpsRange.toString());
 

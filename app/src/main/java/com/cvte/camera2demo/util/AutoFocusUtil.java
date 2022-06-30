@@ -22,6 +22,8 @@ public class AutoFocusUtil {
         ImageUtil.laplaceCounter = 0;
         ImageUtil.laplaceBiggestValue = 0;
         ImageUtil.laplaceBiggestCount = 0;
+        ImageUtil.AutoFocusFinishedToKeystone = false;
+        ImageUtil.KeystonePositiveFinishedToNegative = false;
         MotorUtil.setMotorForeword();
         ImageUtil.cleanLaplaceValue();
         try {
@@ -39,6 +41,8 @@ public class AutoFocusUtil {
         ImageUtil.laplaceCounter = 0;
         ImageUtil.laplaceBiggestValue = 0;
         ImageUtil.laplaceBiggestCount = 0;
+        ImageUtil.AutoFocusFinishedToKeystone = false;
+        ImageUtil.KeystonePositiveFinishedToNegative = false;
         MotorUtil.setMotorBackward();
         try {
             Thread.sleep(MotorUtil.routeTotalTime);
@@ -71,7 +75,7 @@ public class AutoFocusUtil {
         // 回调n秒
         // handlerAdjust.postDelayed(new closeHandler(), (ImageUtil.laplaceBiggestCount / maxCount * 2500));
         try {
-            int time = MotorUtil.routeTotalTime - ImageUtil.laplaceBiggestCount * MotorUtil.routeTotalTime / ImageUtil.laplaceMaxCount - 275;
+            int time = MotorUtil.routeTotalTime - ImageUtil.laplaceBiggestCount * MotorUtil.routeTotalTime / ImageUtil.laplaceMaxCount;
             if (time < 0) {
                 time = 0;
             }
