@@ -137,17 +137,20 @@ public class CameraService extends Service {
                         mTakePicCount++;
                         if (mTakePicCount > LIMIT_TAKE_PIC) {
                             ImageUtil.AutoFocusFinishedToKeystone = false;
+                            if(true){
+                                showPattern2();
 
-                            showPattern2();
-
-                            //延时500ms，以免下次拍照拍的还是上次显示的图片
-                            mHandler.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    ImageUtil.KeystonePositiveFinishedToNegative = true;
-                                    mTakePicCount = 0;
-                                }
-                            }, 1000);
+                                //延时500ms，以免下次拍照拍的还是上次显示的图片
+                                mHandler.postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        ImageUtil.KeystonePositiveFinishedToNegative = true;
+                                        mTakePicCount = 0;
+                                    }
+                                }, 1000);
+                            } else {
+                                finishAutoFocusService();
+                            }
                         }
                     } else if (ImageUtil.KeystonePositiveFinishedToNegative) {
                         String name = "p0" + (mTakePicCount) + ".png";
@@ -158,20 +161,7 @@ public class CameraService extends Service {
                         mTakePicCount++;
                         if (mTakePicCount > LIMIT_TAKE_PIC) {
                             ImageUtil.KeystonePositiveFinishedToNegative = false;
-                            // 6. 关闭pattern和摄像头
-                            Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
-                            mContext.sendBroadcast(mIntent);
-
-                            mHandler.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    mShowPattern.hidePattern2(mContext);
-                                    mCamera2Helper.closeCamera();
-                                    isStart = false;
-                                    mHandler.removeCallbacks(mOverTimeRunnable);
-                                    stopSelf();
-                                }
-                            }, 500);
+                            finishAutoFocusService();
                         }
                     }
 
@@ -180,6 +170,23 @@ public class CameraService extends Service {
         }
 
         mCamera2Helper.openCamera(this);
+    }
+
+    private void finishAutoFocusService() {
+        // 6. 关闭pattern和摄像头
+        Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
+        mContext.sendBroadcast(mIntent);
+
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mShowPattern.hidePattern2(mContext);
+                mCamera2Helper.closeCamera();
+                isStart = false;
+                mHandler.removeCallbacks(mOverTimeRunnable);
+                stopSelf();
+            }
+        }, 500);
     }
 
     private void initKeystone() {
