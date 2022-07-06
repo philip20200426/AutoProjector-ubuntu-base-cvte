@@ -126,51 +126,56 @@ public class CameraService extends Service {
                         LogUtil.d(bitmap.toString() + " get bitmap duration = " + (now - mLastTime));
                     }
                     mLastTime = now;
-                    LogUtil.d("time   11");
                     // 计算拉普拉斯清晰度
                     toClarityByOpenCV(bitmap);
-                    // 保存到本地
-                    if (ImageUtil.AutoFocusFinishedToKeystone) {
-                        String name = "n0" + (mTakePicCount) + ".png";
-                        if (mTakePicCount != 0) {
-                            ImageUtil.saveBitmap(name, bitmap);
-                        }
-                        mTakePicCount++;
-                        if (mTakePicCount > LIMIT_TAKE_PIC) {
-                            ImageUtil.AutoFocusFinishedToKeystone = false;
-                            if(CVT_EN_KEYSTONE_TWO_PATTERN){
-                                showPattern2();
 
-                                //延时500ms，以免下次拍照拍的还是上次显示的图片
-                                mHandler.postDelayed(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        ImageUtil.KeystonePositiveFinishedToNegative = true;
-                                        mTakePicCount = 0;
-                                    }
-                                }, 1000);
-                            } else {
-                                finishAutoFocusService();
-                            }
-                        }
-                    } else if (ImageUtil.KeystonePositiveFinishedToNegative) {
-                        String name = "p0" + (mTakePicCount) + ".png";
-
-                        if (mTakePicCount != 0) {
-                            ImageUtil.saveBitmap(name, bitmap);
-                        }
-                        mTakePicCount++;
-                        if (mTakePicCount > LIMIT_TAKE_PIC) {
-                            ImageUtil.KeystonePositiveFinishedToNegative = false;
-                            finishAutoFocusService();
-                        }
-                    }
-
+                    //保存自动校正需要的图片到本地
+                    saveAutoKeystonePhoto(bitmap);
                 }
             });
         }
 
         mCamera2Helper.openCamera(this);
+    }
+    private void saveAutoKeystonePhoto (Bitmap bitmap){
+        // 保存到本地
+        if (ImageUtil.AutoFocusFinishedToKeystone) {
+            String name = "n0" + (mTakePicCount) + ".png";
+            if (mTakePicCount != 0) {
+                ImageUtil.saveBitmap(name, bitmap);
+            }
+            mTakePicCount++;
+            if (mTakePicCount > LIMIT_TAKE_PIC) {
+                ImageUtil.AutoFocusFinishedToKeystone = false;
+                if(CVT_EN_KEYSTONE_TWO_PATTERN){
+                    switchToPatternTwo();
+                } else {
+                    finishAutoFocusService();
+                }
+            }
+        } else if (ImageUtil.KeystonePositiveFinishedToNegative) {
+            String name = "p0" + (mTakePicCount) + ".png";
+            if (mTakePicCount != 0) {
+                ImageUtil.saveBitmap(name, bitmap);
+            }
+            mTakePicCount++;
+            if (mTakePicCount > LIMIT_TAKE_PIC) {
+                ImageUtil.KeystonePositiveFinishedToNegative = false;
+                finishAutoFocusService();
+            }
+        }
+    }
+
+    private void switchToPatternTwo(){
+        showPattern2();
+        //延时500ms，以免下次拍照拍的还是上次显示的图片
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                ImageUtil.KeystonePositiveFinishedToNegative = true;
+                mTakePicCount = 0;
+            }
+        }, 1000);
     }
 
     private void finishAutoFocusService() {
