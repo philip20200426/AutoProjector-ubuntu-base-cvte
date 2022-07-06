@@ -50,6 +50,7 @@ public class CameraService extends Service {
     private boolean isStart = false;
     private Runnable mOverTimeRunnable;
     public static final Boolean CVT_EN_AUTO_FOCUS_APPROACH = SystemPropertiesAdapter.getBoolean("ro.CVT_EN_AUTO_FOCUS_APPROACH", false);
+    public static final Boolean CVT_EN_KEYSTONE_TWO_PATTERN = SystemPropertiesAdapter.getBoolean("ro.CVT_EN_KEYSTONE_TWO_PATTERN", false);
 
     public CameraService() {
     }
@@ -137,7 +138,7 @@ public class CameraService extends Service {
                         mTakePicCount++;
                         if (mTakePicCount > LIMIT_TAKE_PIC) {
                             ImageUtil.AutoFocusFinishedToKeystone = false;
-                            if(true){
+                            if(CVT_EN_KEYSTONE_TWO_PATTERN){
                                 showPattern2();
 
                                 //延时500ms，以免下次拍照拍的还是上次显示的图片
