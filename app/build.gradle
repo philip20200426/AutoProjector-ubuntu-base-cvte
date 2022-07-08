@@ -20,11 +20,14 @@ android {
 
     defaultConfig {
         applicationId "com.cvte.camera2demo"
-        minSdkVersion 21
+        minSdkVersion 26
         targetSdkVersion 29
 //        versionCode 1
 //        versionName "1.0"
-
+        ndk{
+            // 打包生成的 APK 文件指挥包含 ARM 指令集的动态库
+            abiFilters "armeabi-v7a"/*, "arm64-v8a"*/
+        }
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     defaultConfig.versionName = genVersionName()
@@ -67,4 +70,6 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation project(path: ':opencv')
     implementation files('libs\\android.adapter-28-v1.2.jar')
+    implementation files('libs\\com.cvte.at.platform.jar')
+    implementation files('libs\\framework.jar')
 }

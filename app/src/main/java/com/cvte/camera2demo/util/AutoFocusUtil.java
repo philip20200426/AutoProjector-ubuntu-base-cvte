@@ -14,7 +14,8 @@ public class AutoFocusUtil {
     public static final int AUTO_FOCUS_TO_CLEAREST = 4;
     public static final int AUTO_FOCUS_TO_CLEAREST_CHECK = 5;
     public static int autoFocusState = AUTO_FOCUS_INCREASE;
-
+    //全向自动校正开关
+    public static final String AUTO_ALL_CORRECTION = "persist.cvte.auto_all_correction";
     public static void setAutoFocusOrigin() {
         // 1. 将马达转到初始位置
         Log.d("HBK","将马达转到初始位置");

@@ -34,7 +34,7 @@ import org.opencv.imgproc.Imgproc;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
-
+import com.cvte.at.platform.AtShellCmd;
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static org.opencv.core.Core.mean;
 
