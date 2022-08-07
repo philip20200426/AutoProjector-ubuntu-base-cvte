@@ -13,7 +13,10 @@ public class AutoFocusUtil {
     public static final int AUTO_FOCUS_TURN_ROUND = 3;
     public static final int AUTO_FOCUS_TO_CLEAREST = 4;
     public static final int AUTO_FOCUS_TO_CLEAREST_CHECK = 5;
+    public static final int AUTO_FOCUS_WAIT_FOR_CALCULATE_DEF = 6;
+    public static final int AUTO_FOCUS_WAIT_FOR_CALCULATE_CLEAREST = 7;
     public static int autoFocusState = AUTO_FOCUS_INCREASE;
+    public static int autoFocusStatePrevious;
     //全向自动校正开关
     public static final String AUTO_ALL_CORRECTION = "persist.cvte.auto_all_correction";
     public static void setAutoFocusOrigin() {
@@ -241,4 +244,37 @@ public class AutoFocusUtil {
         //设置状态机结束，退出
         AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_FINISHED_TO_EXIT;
     }
+
+
+    public static void setAutoFocusTraversalByStep(int step) {
+        //跑500步 同时拍照，并返回拍摄的图片集
+
+        //1.复位拍照数据
+        ImageUtil.resetBitmapPool();
+        Log.d("HBK-BC", "resetBitmapPool");
+
+        //2.开始拍照
+        SystemPropertiesAdapter.set("persist.begin.take.photo","1");
+        Log.d("HBK-BC", "persist.begin.take.photo = " + SystemPropertiesAdapter.get("persist.begin.take.photo", "0"));
+
+        //3.开始跑500步
+        MotorUtil.setMotorRunInOrderStep(step);
+
+        //4.跑完500步，在BorderCheck中收到结束UEvent结束拍照
+    }
+
+    public static void setAutoFocusToBitmapPoolPosition() {
+        Log.d("HBK-BC", "ToBitmapPoolPosition");
+
+        //确认过check OK之后，回到clearest过程的回调量
+        int step = MotorUtil.TraversalGapStep - ImageUtil.bitmapPoolBiggestCounter * MotorUtil.TraversalGapStep / ImageUtil.bitmapPoolCounter;
+        Log.d("HBK-GAP","[END END] clearest过程的回调量" + step);
+        if (step < 0) {
+            step = 0;
+        } else {
+            step += 50*2;
+        }
+        MotorUtil.setMotorRunInOrderStep(step);
+    }
+
 }

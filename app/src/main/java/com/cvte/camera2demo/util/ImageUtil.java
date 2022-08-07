@@ -9,6 +9,8 @@ import android.graphics.YuvImage;
 import android.media.Image;
 import android.util.Log;
 
+import com.cvte.adapter.android.os.SystemPropertiesAdapter;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -616,5 +618,47 @@ public class ImageUtil {
     public static double laplaceGapStandardDeviation = 0;
     public static double laplaceGapValueSum = 0;
 
+    /*
+    * 计算步数 & 回转的算法 start
+    *  */
+    //图片数据池
+    public static int BITMAP_MAX_COUNT = 256;
+    public static Bitmap[] bitmapPool = new Bitmap[BITMAP_MAX_COUNT];
+
+    public static void cleanBitmapPool(){
+        for(int i=0; i < BITMAP_MAX_COUNT; i++){
+            bitmapPool[i] = null;
+
+        }
+    }
+    public static int bitmapPoolCounter;
+    public static int bitmapPoolBiggestCounter;
+    public static double bitmapPoolBiggestValue;
+    public static int bitmapPoolBiggestCountCheck;
+    public static double bitmapPoolBiggestValueCheck;
+    public static int bitmapPoolMaxCountCheck = 0;
+    public static void initBitmapPool(){
+        bitmapPoolCounter = 0;
+        bitmapPoolBiggestCounter = 0;
+        bitmapPoolBiggestValue = 0.0;
+        bitmapPoolBiggestCountCheck = 0;
+        bitmapPoolBiggestValueCheck = 0.0;
+        bitmapPoolMaxCountCheck = 0;
+        cleanBitmapPool();
+        SystemPropertiesAdapter.set("persist.begin.take.photo","0");
+    }
+    public static void resetBitmapPool(){
+        bitmapPoolCounter = 0;
+        bitmapPoolBiggestCounter = 0;
+        bitmapPoolBiggestValue = 0.0;
+        bitmapPoolBiggestCountCheck = 0;
+        bitmapPoolBiggestValueCheck = 0.0;
+        bitmapPoolMaxCountCheck = 0;
+        cleanBitmapPool();
+        SystemPropertiesAdapter.set("persist.begin.take.photo","0");
+    }
+    /*
+     * 计算步数 & 回转的算法 end
+     *  */
 
 }

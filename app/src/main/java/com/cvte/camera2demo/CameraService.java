@@ -11,6 +11,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -36,6 +37,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import com.cvte.at.platform.AtShellCmd;
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
+import static org.opencv.core.Core.borderInterpolate;
 import static org.opencv.core.Core.mean;
 
 public class CameraService extends Service {
@@ -51,6 +53,7 @@ public class CameraService extends Service {
     private Runnable mOverTimeRunnable;
     public static final Boolean CVT_EN_AUTO_FOCUS_APPROACH = SystemPropertiesAdapter.getBoolean("ro.CVT_EN_AUTO_FOCUS_APPROACH", false);
     public static final Boolean CVT_EN_KEYSTONE_TWO_PATTERN = SystemPropertiesAdapter.getBoolean("ro.CVT_EN_KEYSTONE_TWO_PATTERN", false);
+    public static final Boolean CVT_EN_AUTO_FOCUS_BORDER_CHECK = SystemPropertiesAdapter.getBoolean("persist.focus.border.check", false);
 
     public CameraService() {
     }
@@ -105,7 +108,7 @@ public class CameraService extends Service {
         }
     }
 
-    private void openCamera() {
+    public void openCamera() {
         if (mCamera2Helper == null) {
             mCamera2Helper = new Camera2Helper(new Camera2Helper.OnCameraListener() {
                 @Override
@@ -123,11 +126,18 @@ public class CameraService extends Service {
                 public void onCaptureComplete(Bitmap bitmap, File file) {
                     long now = SystemClock.uptimeMillis();
                     if (mLastTime != -1) {
-                        LogUtil.d(bitmap.toString() + " get bitmap duration = " + (now - mLastTime));
+                        Log.d("GAP_TIME",bitmap.toString() + " get bitmap duration = " + (now - mLastTime));
                     }
                     mLastTime = now;
-                    // 计算拉普拉斯清晰度
-                    toClarityByOpenCV(bitmap);
+                    if(CVT_EN_AUTO_FOCUS_BORDER_CHECK){
+                        //保存图片到运存上的数据池
+                        if(beginTakePhoto()){
+                            saveBitmapToDataPoolOnRAM(bitmap);
+                        }
+                    } else {
+                        // 计算拉普拉斯清晰度
+                        toClarityByOpenCV(bitmap);
+                    }
 
                     //保存自动校正需要的图片到本地
                     saveAutoKeystonePhoto(bitmap);
@@ -137,6 +147,19 @@ public class CameraService extends Service {
 
         mCamera2Helper.openCamera(this);
     }
+
+    private boolean beginTakePhoto() {
+        boolean ret = SystemPropertiesAdapter.get("persist.begin.take.photo", "0").equals("1");
+        return ret;
+    }
+
+    private void saveBitmapToDataPoolOnRAM(Bitmap bitmap) {
+        if(ImageUtil.bitmapPoolCounter <= ImageUtil.BITMAP_MAX_COUNT){
+            ImageUtil.bitmapPool[ImageUtil.bitmapPoolCounter] = bitmap;
+            ImageUtil.bitmapPoolCounter++;
+        }
+    }
+
     private void saveAutoKeystonePhoto (Bitmap bitmap){
         // 保存到本地
         if (ImageUtil.AutoFocusFinishedToKeystone) {
@@ -183,6 +206,8 @@ public class CameraService extends Service {
         Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
         mContext.sendBroadcast(mIntent);
 
+        reopenAsuSpeech();
+
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -191,8 +216,23 @@ public class CameraService extends Service {
                 isStart = false;
                 mHandler.removeCallbacks(mOverTimeRunnable);
                 stopSelf();
+                System.exit(0);
             }
         }, 500);
+    }
+
+    private void closeAsuSpeech() {
+        int asuSpeech = Settings.Global.getInt(mContext.getContentResolver(), "settings_asu_speech_enabled", 1);
+        if (asuSpeech == 1) {
+            Settings.Global.putInt(mContext.getContentResolver(), "settings_asu_speech_enabled", 0);
+        }
+    }
+
+    private void reopenAsuSpeech() {
+        int asuSpeech = Settings.Global.getInt(mContext.getContentResolver(), "settings_asu_speech_enabled", 0);
+        if (asuSpeech == 0) {
+            Settings.Global.putInt(mContext.getContentResolver(), "settings_asu_speech_enabled", 1);
+        }
     }
 
     private void initKeystone() {
@@ -207,6 +247,12 @@ public class CameraService extends Service {
             MySysCmd("service call SurfaceFlinger 1006");
         }
 
+        //init Border Check
+        if(CVT_EN_AUTO_FOCUS_BORDER_CHECK){
+        Log.d("HBK-U","initKeystone");
+            BorderCheckReceiver.getInstance().startObserving();
+        }
+        closeAsuSpeech();
     }
 
     private void removeLocalImgs() {
@@ -273,75 +319,22 @@ public class CameraService extends Service {
                     //超时退出
                     overtimeExit();
 
-                    if (CVT_EN_AUTO_FOCUS_APPROACH)
-                    {
-                        // 1. 设置状态机初始状态
-                        Log.d("HBK-GAP","GAP-设置状态机初始状态");
-                        AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_INCREASE;
-                        MotorUtil.setMotorIOStartStatus();
+                    if (CVT_EN_AUTO_FOCUS_APPROACH) {
+                        /*AutoFocusMethod② 纯图像，逐次逼近算法*/
                         openCamera();
-                        Thread.sleep(500);
-                        // 2. 进入逐次逼近状态机，找到最佳位置
-                        while(AutoFocusUtil.autoFocusState != AutoFocusUtil.AUTO_FOCUS_FINISHED_TO_EXIT) {
-                            switch (AutoFocusUtil.autoFocusState) {
-                                case AutoFocusUtil.AUTO_FOCUS_INCREASE: {
-                                    //跑1s，拍照，计算拉普拉斯值
-                                    Log.d("HBK-GAP","GAP-【1】递增");
-                                    AutoFocusUtil.setAutoFocusGapTraversal();
-                                    break;
-                                }
-                                case AutoFocusUtil.AUTO_FOCUS_TURN_ROUND: {
-                                    Log.d("HBK-GAP","GAP-【2】回转");
-                                    //设置方向反向
-                                    MotorUtil.setMotorTurnRound();
-		                            //跑1s，拍照，计算拉普拉斯值
-                                    AutoFocusUtil.setAutoFocusGapTraversal();
-                                    break;
-                                }
-                                case AutoFocusUtil.AUTO_FOCUS_TO_CLEAREST_CHECK:{
-                                    Log.d("HBK-GAP","GAP-【3】找到最清晰检查");
-                                    ImageUtil.laplaceBiggestValueCheck = ImageUtil.laplaceBiggestValue;
-                                    ImageUtil.laplaceBiggestCountCheck = ImageUtil.laplaceBiggestCount;
-                                    ImageUtil.laplaceMaxCountCheck = ImageUtil.laplaceMaxCount;
-                                    //设置方向反向
-                                    MotorUtil.setMotorTurnRound();
-                                    //跑1s，拍照，计算拉普拉斯值
-                                    AutoFocusUtil.setAutoFocusGapTraversal();
-                                    break;
-                                }
-                                case AutoFocusUtil.AUTO_FOCUS_TO_CLEAREST:{
-                                    Log.d("HBK-GAP","GAP-【4】最清晰位置确认");
-                                    //设置方向反向(回转)
-                                    MotorUtil.setMotorTurnRound();
-                                    //算出最大值的位置，回到最大值，并设置状态机
-                                    AutoFocusUtil.setAutoFocusToGapPosition();
-                                    break;
-                                }
-                                default:{
-                                    //无状态，退出
-                                    AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_FINISHED_TO_EXIT;
-                                    break;
-                                }
-                            }
-                        }
-                        // 3.清除状态机位置
-                        AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_NULL;
-
+                        AutoFocusMethod.autoFocusStepSuccessiveApproximation();
+                    } else if(CVT_EN_AUTO_FOCUS_BORDER_CHECK) {
+                        /*AutoFocusMethod③ 纯步数和限位UEvent，逐次逼近算法*/
+                        openCamera();
+                        ImageUtil.resetBitmapPool();
+                        AutoFocusMethod.autoFocusStepBorderCheckFunc();
                     } else {
-                        // 1. 将马达转到初始位置
-                        AutoFocusUtil.setAutoFocusOrigin();
-
-                        // 2. 马达转动整个过程拍摄所有画面
-                        openCamera();
-
-                        AutoFocusUtil.setAutoFocusTraversal();
-
-                        // 3. 找出清晰度最大值下标以及总共有多少张图片，并计算得出最清晰（最大值）的画面时间在整个马达转动过程中的哪个位置
-                        AutoFocusUtil.calculateAutoFocusLaplaceMax();
-
-                        // 4. 按比例回转到对应的位置
-                        AutoFocusUtil.setAutoFocusToPosition();
+                        /*AutoFocusMethod① 纯图像，时间遍历算法*/
+                        autoFocusTraversingMethod();
                     }
+
+                    // IMU:发送广播让系统存校准后的IMU数据
+                    sendMessageForSaveIMUData();
 
                     // 5. 保存自动校正照片到指定路径
                     mTakePicCount = 0;
@@ -362,6 +355,27 @@ public class CameraService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
+    private void sendMessageForSaveIMUData(){
+        Intent mIntent = new Intent("cvte.intent.action.GsensorStoreOnlineImu");
+        mContext.sendBroadcast(mIntent);
+    }
+
+    public void autoFocusTraversingMethod() {
+        // 1. 将马达转到初始位置
+        AutoFocusUtil.setAutoFocusOrigin();
+
+        // 2. 马达转动整个过程拍摄所有画面
+        openCamera();
+
+        AutoFocusUtil.setAutoFocusTraversal();
+
+        // 3. 找出清晰度最大值下标以及总共有多少张图片，并计算得出最清晰（最大值）的画面时间在整个马达转动过程中的哪个位置
+        AutoFocusUtil.calculateAutoFocusLaplaceMax();
+
+        // 4. 按比例回转到对应的位置
+        AutoFocusUtil.setAutoFocusToPosition();
+    }
+
     private void overtimeExit() {
         if (mOverTimeRunnable == null) {
             mOverTimeRunnable = new Runnable() {
@@ -369,10 +383,13 @@ public class CameraService extends Service {
                 public void run() {
                     LogUtil.e("over 30 seconds,overtime exit,remove all views!");
                     ShowPattern.getInstance(CameraService.this.getApplicationContext()).removeAllView();
+                    AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_FINISHED_TO_EXIT;
+                    SystemPropertiesAdapter.set("persist.begin.take.photo","999");
+                    ImageUtil.resetBitmapPool();
                 }
             };
         }
-        mHandler.postDelayed(mOverTimeRunnable, 15_000);
+        mHandler.postDelayed(mOverTimeRunnable, 20_000);
     }
 
 

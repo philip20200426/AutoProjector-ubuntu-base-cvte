@@ -24,6 +24,12 @@ public class MotorUtil {
     public static final String PLUS_VALUE_YS = "5 3000";
     public static final String REDUCE_VALUE_YS = "2 3000";
     public static final String MOTOR_STOP_YS = "0 3000";
+    public static final String PLUS_VALUE_YS_NO_STEP = "5 ";
+    public static final String REDUCE_VALUE_YS_NO_STEP = "2 ";
+    public static final String MOTOR_STOP_YS_NO_STEP = "0 ";
+    public static final String YS_DIRECTION_PLUS = "5";
+    public static final String YS_DIRECTION_REDUCE = "2";
+    public static final String YS_DIRECTION_STOP = "0";
     public static String MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_DEF;
     public static String PLUS_VALUE = PLUS_VALUE_DEF;
     public static String REDUCE_VALUE = REDUCE_VALUE_DEF;
@@ -40,6 +46,7 @@ public class MotorUtil {
 
     public static int TraversalGapTime = 1000;//ms
     public static int routeTotalTime = 0;//ms
+    public static int TraversalGapStep = 1000;
 
     public MotorUtil(){
         initStepMotorStatus();
@@ -208,6 +215,34 @@ public class MotorUtil {
             }
         }catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    /*****************************************
+     * function：步进电机转到相应的步数
+     * parameter: ①步数
+     * return: 无
+     *****************************************/
+    public static void setMotorRunInOrderStep(int step){
+        Log.d("HBK-BC", "steppingdDirectionValue = " + steppingdDirectionValue);
+        String[] steppingdDirection = steppingdDirectionValue.split(" ");
+        if(steppingdDirection[0] == null || steppingdDirection[1] == null){
+            return;
+        }
+
+        Log.d("HBK-BC", "steppingdDirection[0] = " + steppingdDirection[0] + ",steppingdDirection[1] = " + steppingdDirection[1]);
+        if(steppingdDirection[0].equals(YS_DIRECTION_PLUS)){
+            steppingdDirectionValue = PLUS_VALUE_YS_NO_STEP + step;
+            PLUS_VALUE = steppingdDirectionValue;
+            Log.d("HBK-BC", "steppingdDirectionValue = " + steppingdDirectionValue);
+            writeSys(MANUAL_MOTOR_NODE, steppingdDirectionValue);
+        } else if (steppingdDirection[0].equals(YS_DIRECTION_REDUCE)){
+            steppingdDirectionValue = REDUCE_VALUE_YS_NO_STEP + step;
+            REDUCE_VALUE = steppingdDirectionValue;
+            Log.d("HBK-BC", "steppingdDirectionValue = " + steppingdDirectionValue);
+            writeSys(MANUAL_MOTOR_NODE, steppingdDirectionValue);
+        } else {
+            Log.d("HBK-BC", "steppingdDirectionValue = null");
         }
     }
 }
