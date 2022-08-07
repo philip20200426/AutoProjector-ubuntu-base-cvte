@@ -36,6 +36,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import com.cvte.at.platform.AtShellCmd;
+import com.cvte.camera2demo.util.SaveKeystoneUtil;
+
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static org.opencv.core.Core.borderInterpolate;
 import static org.opencv.core.Core.mean;
@@ -241,6 +243,7 @@ public class CameraService extends Service {
             SystemPropertiesAdapter.set("vendor.mstar.test.pos_rb_offset", "0:0");
             SystemPropertiesAdapter.set("vendor.mstar.test.pos_rt_offset", "0:0");
             SystemPropertiesAdapter.set("vendor.mstar.test.pos_lt_offset", "0:1");
+            SaveKeystoneUtil.saveUserDataToSystem();
         }
         if(SystemPropertiesAdapter.get("persist.sys.auto_foucs", "0").equals("1")){
             SystemPropertiesAdapter.set("persist.vendor.hwc.keystone", "0.0,0.0,1920.0,0.0,1920,1080,0,1080.0");
