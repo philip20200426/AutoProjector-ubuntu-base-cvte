@@ -298,7 +298,7 @@ public class CameraService extends Service {
         if(intent != null){
             LogUtil.d("onStartCommand " + intent.toString() + " isStart=" + isStart);
         }
-        if (isStart) {
+        if (isStart || SystemPropertiesAdapter.get("persist.cvte.auto_focus", "1").equals("0")) {
             return super.onStartCommand(intent, flags, startId);
         }
         isStart = true;
