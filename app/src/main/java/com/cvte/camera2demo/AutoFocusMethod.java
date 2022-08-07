@@ -1,6 +1,8 @@
 package com.cvte.camera2demo;
 
 import android.graphics.Bitmap;
+import android.graphics.Rect;
+import android.os.SystemClock;
 import android.util.Log;
 
 import com.cvte.adapter.android.os.SystemPropertiesAdapter;
@@ -11,7 +13,9 @@ import com.cvte.camera2demo.util.MotorUtil;
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Range;
 import org.opencv.core.Scalar;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import static org.opencv.core.Core.mean;
@@ -189,13 +193,27 @@ public class AutoFocusMethod {
     }
 
     public static void calculateDataPoolPhotoClarity(){
+        long mLastTime = -1L;
+        long timeBegin = SystemClock.uptimeMillis();
+        long timeNow = -1L;
+
         //计算拍下来图片的清晰度的值
         for(int i=0; i < ImageUtil.bitmapPoolCounter; i++){
-            ImageUtil.laplaceValue[i] = calculateOneBitmapClarity(ImageUtil.bitmapPool[i]);
+            long now = SystemClock.uptimeMillis();
+            if (mLastTime != -1) {
+                Log.d("HBK-T"," get laplace duration = " + (now - mLastTime));
+            }
+            mLastTime = now;
+//            ImageUtil.laplaceValue[i] = calculateOneBitmapClarity(ImageUtil.bitmapPool[i]);
+            ImageUtil.laplaceValue[i] = calculateOneBitmapClarityWithNoGray(ImageUtil.bitmapPool[i]);
             Log.d("HBK-BC", "laplaceValue[" + i + "]:" + ImageUtil.laplaceValue[i]);
         }
         //找出最大值下标
         calculateBitmapPoolLaplaceMax();
+        timeNow = SystemClock.uptimeMillis();
+        if (timeNow != -1) {
+            Log.d("HBK-T"," get calculate duration = " + (timeNow - timeBegin));
+        }
     }
 
     public static void calculateBitmapPoolLaplaceMax() {
@@ -223,6 +241,30 @@ public class AutoFocusMethod {
         Imgproc.Laplacian(resizeMat, lapMat, ddepth, kernel_size);
         Scalar mean = mean(lapMat);
         return mean.val[0];
+    }
+
+    public static double calculateOneBitmapClarityWithNoGray(Bitmap srcBitmap) {
+        int kernel_size = 3;
+        int ddepth = CvType.CV_16U;
+        Mat mat = new Mat();
+        Utils.bitmapToMat(srcBitmap, mat);
+        mat = cutImgROI(mat);
+//        Utils.matToBitmap(mat,srcBitmap);
+//        ImageUtil.saveBitmap("/sdcard/DCIM/01.jpg", srcBitmap);
+        Mat resizeMat = new Mat();
+        Imgproc.resize(mat, resizeMat, new org.opencv.core.Size(128, 128));
+        Mat lapMat = new Mat();
+        Imgproc.Laplacian(resizeMat, lapMat, ddepth, kernel_size);
+        Scalar mean = mean(lapMat);
+        return mean.val[0];
+    }
+
+    public static Mat cutImgROI(Mat bitmap){
+        int startRow = 232, endRow = 232+256;
+        int startCol = 512, endCol = 512+256;
+        Range areaRow = new Range(startRow, endRow);
+        Range areaCol = new Range(startCol, endCol);
+        return new Mat(bitmap, areaRow, areaCol);
     }
 
     public static int getBitmapPoolState(){
