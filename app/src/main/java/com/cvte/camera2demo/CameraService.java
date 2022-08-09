@@ -29,6 +29,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Range;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
@@ -138,7 +139,8 @@ public class CameraService extends Service {
                         }
                     } else {
                         // 计算拉普拉斯清晰度
-                        toClarityByOpenCV(bitmap);
+//                        toClarityByOpenCV(bitmap);
+                        toClarityByOpenCVWithNoGray(bitmap);
                     }
 
                     //保存自动校正需要的图片到本地
@@ -417,7 +419,6 @@ public class CameraService extends Service {
         Imgproc.Laplacian(resizeMat, lapMat, ddepth, kernel_size);
         Scalar mean = mean(lapMat);
         double value = mean.val[0];
-        Log.d("HBK", "Clarity Value:[" + ImageUtil.laplaceCounter + "]" + value);
         Log.d("HBK-GAP", "清晰度:[" + ImageUtil.laplaceCounter + "]" + value);
         ImageUtil.laplaceValue[ImageUtil.laplaceCounter] = value;
         ImageUtil.laplaceCounter = ImageUtil.laplaceCounter + 1;
@@ -425,6 +426,37 @@ public class CameraService extends Service {
         Utils.matToBitmap(grayMat, srcBitmap);
 
         return srcBitmap;
+    }
+
+    /*****************************************
+     * function：计算清晰度（无gray转化，因为投影摄像头默认是黑白的）
+     * @param srcBitmap 需要计算的图片
+     * @return Bitmap
+     *****************************************/
+    public void toClarityByOpenCVWithNoGray(Bitmap srcBitmap) {
+        int kernel_size = 3;
+        int ddepth = CvType.CV_16U;
+
+        Mat mat = new Mat();
+        Utils.bitmapToMat(srcBitmap, mat);
+        mat = cutImgROI(mat);
+        Mat resizeMat = new Mat();
+        Imgproc.resize(mat, resizeMat, new org.opencv.core.Size(128, 128));
+        Mat lapMat = new Mat();
+        Imgproc.Laplacian(resizeMat, lapMat, ddepth, kernel_size);
+        Scalar mean = mean(lapMat);
+        double value = mean.val[0];
+        Log.d("HBK-GAP", "清晰度:[" + ImageUtil.laplaceCounter + "]" + value);
+        ImageUtil.laplaceValue[ImageUtil.laplaceCounter] = value;
+        ImageUtil.laplaceCounter = ImageUtil.laplaceCounter + 1;
+    }
+
+    public static Mat cutImgROI(Mat bitmap){
+        int startRow = 232, endRow = 232+256;
+        int startCol = 512, endCol = 512+256;
+        Range areaRow = new Range(startRow, endRow);
+        Range areaCol = new Range(startCol, endCol);
+        return new Mat(bitmap, areaRow, areaCol);
     }
 
     /*****************************************

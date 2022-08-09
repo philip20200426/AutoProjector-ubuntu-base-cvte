@@ -82,12 +82,12 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
     }
 
     private void initImageSize() {
-        if (MotorUtil.CVT_EN_REMOTE_CONTROL_FOCUS || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_WANBO)) {
-            SIZE_WIDTH = 1280;
-            SIZE_HEIGHT = 720;
-        } else {
+        if (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_DC_WANBO) {
             SIZE_WIDTH = 640;
             SIZE_HEIGHT = 480;
+        } else {
+            SIZE_WIDTH = 1280;
+            SIZE_HEIGHT = 720;
         }
     }
 

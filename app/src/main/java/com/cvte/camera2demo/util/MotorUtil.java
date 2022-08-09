@@ -30,6 +30,11 @@ public class MotorUtil {
     public static final String YS_DIRECTION_PLUS = "5";
     public static final String YS_DIRECTION_REDUCE = "2";
     public static final String YS_DIRECTION_STOP = "0";
+    public static final String MANUAL_MOTOR_NODE_RGL_885 = "/sys/devices/platform/yn_steppermotor/ctrl_start";
+    public static final String PLUS_VALUE_RGL_885 = "0 180";
+    public static final String REDUCE_VALUE_RGL_885 = "1 180";
+    public static final String MOTOR_STOP_RGL_885 = "2 0";
+
     public static String MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_DEF;
     public static String PLUS_VALUE = PLUS_VALUE_DEF;
     public static String REDUCE_VALUE = REDUCE_VALUE_DEF;
@@ -40,6 +45,7 @@ public class MotorUtil {
     public static final int MOTOR_DC_WANBO = 0;
     public static final int MOTOR_STEP_WANBO = 1;
     public static final int MOTOR_STEP_YS = 2;
+    public static final int MOTOR_STEP_RGL_885 = 3;
     public static String steppingdDirectionValue = MOTOR_STOP;
     public static String DCDirectionValueIOF = MANUAL_FOCUS_IO_FOREWORD_OFF;
     public static String DCDirectionValueIOB = MANUAL_FOCUS_IO_BACKWARD_OFF;
@@ -85,6 +91,17 @@ public class MotorUtil {
                 TraversalGapTime = 500;//ms
             }
                 break;
+            case MotorUtil.MOTOR_STEP_RGL_885:{
+                MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_RGL_885;
+                PLUS_VALUE = PLUS_VALUE_RGL_885;
+                REDUCE_VALUE = REDUCE_VALUE_RGL_885;
+                MOTOR_STOP = MOTOR_STOP_RGL_885;
+                steppingdDirectionValue = MOTOR_STOP;
+                //临时用于第一套遍历，和第二套逐次逼近
+                routeTotalTime = 3500;//ms
+                TraversalGapTime = 1500;//ms
+            }
+                break;
             default:{
                 if(CVT_EN_REMOTE_CONTROL_FOCUS){
                     MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_DEF;
@@ -120,7 +137,8 @@ public class MotorUtil {
     public static boolean isStepMotor(){
         boolean ret = false;
         if(CVT_EN_REMOTE_CONTROL_FOCUS || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_WANBO)
-                || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_YS) || CVT_EN_YISHU_FOCUS){
+                || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_YS) || CVT_EN_YISHU_FOCUS
+                || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_RGL_885)){
             ret = true;
         }
         return ret;
@@ -128,6 +146,7 @@ public class MotorUtil {
 
     public static void setMotorForeword(){
         //foreword
+        Log.d("HBK-885","Foreword isStepMotor():" + isStepMotor());
         if(isStepMotor()) {
             writeSys(MANUAL_MOTOR_NODE, PLUS_VALUE);
         }else{
@@ -138,6 +157,7 @@ public class MotorUtil {
 
     public static void setMotorBackward() {
         //backward
+        Log.d("HBK-885","Backward isStepMotor():" + isStepMotor());
         if (isStepMotor()) {
             writeSys(MANUAL_MOTOR_NODE, REDUCE_VALUE);
         } else {
@@ -185,8 +205,10 @@ public class MotorUtil {
 
     public static void setMotorRun(){
         //foreword
+        Log.d("HBK-885","isStepMotor():" + isStepMotor());
         if(isStepMotor()){
             writeSys(MANUAL_MOTOR_NODE, steppingdDirectionValue);
+            Log.d("HBK-885","writeSys:" + MANUAL_MOTOR_NODE+" "+steppingdDirectionValue);
         }else{
             writeSys(MANUAL_FOCUS_IO_FOREWORD, DCDirectionValueIOF);
             writeSys(MANUAL_FOCUS_IO_BACKWARD, DCDirectionValueIOB);
@@ -197,6 +219,7 @@ public class MotorUtil {
         steppingdDirectionValue = PLUS_VALUE;
         DCDirectionValueIOF = MANUAL_FOCUS_IO_FOREWORD_ON;
         DCDirectionValueIOB = MANUAL_FOCUS_IO_BACKWARD_OFF;
+        Log.d("HBK-885","PLUS_VALUE" + steppingdDirectionValue);
     }
 
     /*****************************************
