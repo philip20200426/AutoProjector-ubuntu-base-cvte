@@ -20,4 +20,13 @@ public class Constants {
     // MTK common KEYSTONE FOR HDCP
     public static final boolean CVT_EN_KEYSTONE_FOR_HDCP = SystemPropertiesAdapter.get("ro.CVT_EN_KEYSTONE_FOR_HDCP", "0").equals("1");
 
+    /**
+     * <ul>
+     *     <li>0:默认状态</li>
+     *     <li>1:拍照状态</li>
+     *     <li>2:停止拍照</li>
+     *     <li>999:相机异常</li>
+     * </ul>
+     */
+    public static final String PERSIST_BEGIN_TAKE_PHOTO = "persist.begin.take.photo";
 }
