@@ -1,5 +1,7 @@
 package com.cvte.camera2demo.util;
 
+import static com.cvte.camera2demo.util.Constants.PERSIST_BEGIN_TAKE_PHOTO;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -18,6 +20,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
+import java.util.Arrays;
 
 
 /**
@@ -31,7 +34,8 @@ import java.nio.ReadOnlyBufferException;
  */
 public class ImageUtil {
     private static final String TAG = "ImageUtil";
-    private static final String mSavePath= "/sdcard/DCIM/";;
+    private static final String mSavePath = "/sdcard/DCIM/";
+    ;
 
 
     public static byte[] getI420DataFromImage(Image image) {
@@ -476,6 +480,7 @@ public class ImageUtil {
 
     /**
      * 将Bitmap存为 .bmp格式图片
+     *
      * @param bitmap
      */
     public static void saveBmp(String name, Bitmap bitmap) {
@@ -488,20 +493,20 @@ public class ImageUtil {
         int bufferSize = nBmpHeight * (nBmpWidth * 3 + nBmpWidth % 4);
         try {
             // 存储文件名
-            Log.d("HBK","Ready to save picture");
+            Log.d("HBK", "Ready to save picture");
             //指定我们想要存储文件的地址
-            Log.d("HBK","Save Path=" + mSavePath);
+            Log.d("HBK", "Save Path=" + mSavePath);
 
             File fileDir = new File(mSavePath);
             if (!fileDir.exists()) {
-                Log.d("HBK","TargetPath isn't exist");
+                Log.d("HBK", "TargetPath isn't exist");
                 fileDir.mkdir();
             } else {
                 String filename = mSavePath + name;
-                Log.d("HBK","filename = " + filename);
+                Log.d("HBK", "filename = " + filename);
                 File file = new File(filename);
                 if (!file.exists()) {
-                    Log.d("HBK","filename isn't exist");
+                    Log.d("HBK", "filename isn't exist");
                     file.createNewFile();
                 }
                 FileOutputStream fileos = new FileOutputStream(filename);
@@ -604,8 +609,9 @@ public class ImageUtil {
     public static int laplaceMinimumCount = 0;
     public static int laplaceMaxCountCheck = 0;
     public static int laplaceMaxCount = 0;
-    public static void cleanLaplaceValue(){
-        for(int i=0; i < laplaceCounter; i++){
+
+    public static void cleanLaplaceValue() {
+        for (int i = 0; i < laplaceCounter; i++) {
             laplaceValue[i] = 0;
         }
     }
@@ -619,25 +625,45 @@ public class ImageUtil {
     public static double laplaceGapValueSum = 0;
 
     /*
-    * 计算步数 & 回转的算法 start
-    *  */
+     * 计算步数 & 回转的算法 start
+     *  */
     //图片数据池
     public static int BITMAP_MAX_COUNT = 256;
     public static Bitmap[] bitmapPool = new Bitmap[BITMAP_MAX_COUNT];
 
-    public static void cleanBitmapPool(){
-        for(int i=0; i < BITMAP_MAX_COUNT; i++){
+    public static void cleanBitmapPool() {
+        for (int i = 0; i < BITMAP_MAX_COUNT; i++) {
             bitmapPool[i] = null;
 
         }
     }
+
+    /**
+     * 记录拍照 位图池计数器
+     */
     public static int bitmapPoolCounter;
+    /**
+     * 位图池最大计数器
+     */
     public static int bitmapPoolBiggestCounter;
+    /**
+     * 位图池最大值
+     */
     public static double bitmapPoolBiggestValue;
+    /**
+     * 位图池最大计数检查
+     */
     public static int bitmapPoolBiggestCountCheck;
+    /**
+     * 位图池最大值检查
+     */
     public static double bitmapPoolBiggestValueCheck;
+    /**
+     * bitmapPoolMaxCountCheck
+     */
     public static int bitmapPoolMaxCountCheck = 0;
-    public static void initBitmapPool(){
+
+    public static void initBitmapPool() {
         bitmapPoolCounter = 0;
         bitmapPoolBiggestCounter = 0;
         bitmapPoolBiggestValue = 0.0;
@@ -645,9 +671,10 @@ public class ImageUtil {
         bitmapPoolBiggestValueCheck = 0.0;
         bitmapPoolMaxCountCheck = 0;
         cleanBitmapPool();
-        SystemPropertiesAdapter.set("persist.begin.take.photo","0");
+        SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
     }
-    public static void resetBitmapPool(){
+
+    public static void resetBitmapPool() {
         bitmapPoolCounter = 0;
         bitmapPoolBiggestCounter = 0;
         bitmapPoolBiggestValue = 0.0;
@@ -655,10 +682,8 @@ public class ImageUtil {
         bitmapPoolBiggestValueCheck = 0.0;
         bitmapPoolMaxCountCheck = 0;
         cleanBitmapPool();
-        SystemPropertiesAdapter.set("persist.begin.take.photo","0");
+        SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
+        MotorUtil.resetStep();
     }
-    /*
-     * 计算步数 & 回转的算法 end
-     *  */
 
 }

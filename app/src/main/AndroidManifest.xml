@@ -25,14 +25,12 @@
                 <action android:name="com.cvte.camera2demo.CameraService" />
             </intent-filter>
         </service>
-
-        <receiver android:name=".BootBroadcastReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
-
-
+        <!--去掉监听开机广播拉起服务，由tvApi来做-->
+        <!--        <receiver android:name=".BootBroadcastReceiver">-->
+        <!--            <intent-filter>-->
+        <!--                <action android:name="android.intent.action.BOOT_COMPLETED" />-->
+        <!--            </intent-filter>-->
+        <!--        </receiver>-->
     </application>
 
 

@@ -54,24 +54,24 @@ public class MotorUtil {
     public static int routeTotalTime = 0;//ms
     public static int TraversalGapStep = 1000;
 
-    public MotorUtil(){
+    public MotorUtil() {
         initStepMotorStatus();
     }
 
-    public static void initStepMotorStatus(){
-        Log.d("HBK-Y","initStepMotorStatus");
+    public static void initStepMotorStatus() {
+        Log.d("HBK-Y", "initStepMotorStatus");
         int motorType = SystemPropertiesAdapter.getInt("ro.CVT_DEF_STEP_MOTOR_TYPE", 999);
-        switch (motorType){
-            case MotorUtil.MOTOR_DC_WANBO:{
-                if(CVT_EN_YISHU_FOCUS){
-                    Log.d("HBK-Y","MOTOR_DC_YISHU");
+        switch (motorType) {
+            case MotorUtil.MOTOR_DC_WANBO: {
+                if (CVT_EN_YISHU_FOCUS) {
+                    Log.d("HBK-Y", "MOTOR_DC_YISHU");
                     routeTotalTime = 2167;//ms
                 } else {
                     routeTotalTime = 2400;//ms
                 }
             }
-                break;
-            case MotorUtil.MOTOR_STEP_WANBO:{
+            break;
+            case MotorUtil.MOTOR_STEP_WANBO: {
                 MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_DEF;
                 PLUS_VALUE = PLUS_VALUE_DEF;
                 REDUCE_VALUE = REDUCE_VALUE_DEF;
@@ -80,8 +80,8 @@ public class MotorUtil {
                 routeTotalTime = 3700;//ms
                 TraversalGapTime = 1000;//ms
             }
-                break;
-            case MotorUtil.MOTOR_STEP_YS:{
+            break;
+            case MotorUtil.MOTOR_STEP_YS: {
                 MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_YS;
                 PLUS_VALUE = PLUS_VALUE_YS;
                 REDUCE_VALUE = REDUCE_VALUE_YS;
@@ -90,8 +90,8 @@ public class MotorUtil {
                 routeTotalTime = 2167;//ms
                 TraversalGapTime = 500;//ms
             }
-                break;
-            case MotorUtil.MOTOR_STEP_RGL_885:{
+            break;
+            case MotorUtil.MOTOR_STEP_RGL_885: {
                 MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_RGL_885;
                 PLUS_VALUE = PLUS_VALUE_RGL_885;
                 REDUCE_VALUE = REDUCE_VALUE_RGL_885;
@@ -101,9 +101,9 @@ public class MotorUtil {
                 routeTotalTime = 3500;//ms
                 TraversalGapTime = 1500;//ms
             }
-                break;
-            default:{
-                if(CVT_EN_REMOTE_CONTROL_FOCUS){
+            break;
+            default: {
+                if (CVT_EN_REMOTE_CONTROL_FOCUS) {
                     MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_DEF;
                     PLUS_VALUE = PLUS_VALUE_DEF;
                     REDUCE_VALUE = REDUCE_VALUE_DEF;
@@ -111,8 +111,8 @@ public class MotorUtil {
                     steppingdDirectionValue = MOTOR_STOP;
                     routeTotalTime = 3700;//ms
                     TraversalGapTime = 1000;//ms
-                } else if(CVT_EN_YISHU_FOCUS) {
-                    Log.d("HBK-Y","initStepMotorStatus 一数");
+                } else if (CVT_EN_YISHU_FOCUS) {
+                    Log.d("HBK-Y", "initStepMotorStatus 一数");
                     MANUAL_MOTOR_NODE = MANUAL_MOTOR_NODE_YS;
                     PLUS_VALUE = PLUS_VALUE_YS;
                     REDUCE_VALUE = REDUCE_VALUE_YS;
@@ -120,36 +120,36 @@ public class MotorUtil {
                     steppingdDirectionValue = MOTOR_STOP;
                     routeTotalTime = 2167;//ms
                     TraversalGapTime = 500;//ms
-                    Log.d("HBK-Y","MOTOR_STEP_YISHU");
-                    Log.d("HBK-Y","MANUAL_MOTOR_NODE = " + MANUAL_MOTOR_NODE);
-                    Log.d("HBK-Y","PLUS_VALUE = " + PLUS_VALUE);
-                    Log.d("HBK-Y","REDUCE_VALUE = " + REDUCE_VALUE);
-                    Log.d("HBK-Y","MOTOR_STOP = " + MOTOR_STOP);
-                    Log.d("HBK-Y","routeTotalTime = " + routeTotalTime);
-                    Log.d("HBK-Y","TraversalGapTime = " + TraversalGapTime);
+                    Log.d("HBK-Y", "MOTOR_STEP_YISHU");
+                    Log.d("HBK-Y", "MANUAL_MOTOR_NODE = " + MANUAL_MOTOR_NODE);
+                    Log.d("HBK-Y", "PLUS_VALUE = " + PLUS_VALUE);
+                    Log.d("HBK-Y", "REDUCE_VALUE = " + REDUCE_VALUE);
+                    Log.d("HBK-Y", "MOTOR_STOP = " + MOTOR_STOP);
+                    Log.d("HBK-Y", "routeTotalTime = " + routeTotalTime);
+                    Log.d("HBK-Y", "TraversalGapTime = " + TraversalGapTime);
                 }
             }
-                break;
+            break;
         }
-        Log.d("HBK-Y"," routeTotalTime: " + routeTotalTime);
+        Log.d("HBK-Y", " routeTotalTime: " + routeTotalTime);
     }
 
-    public static boolean isStepMotor(){
+    public static boolean isStepMotor() {
         boolean ret = false;
-        if(CVT_EN_REMOTE_CONTROL_FOCUS || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_WANBO)
+        if (CVT_EN_REMOTE_CONTROL_FOCUS || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_WANBO)
                 || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_YS) || CVT_EN_YISHU_FOCUS
-                || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_RGL_885)){
+                || (MotorUtil.CVT_DEF_STEP_MOTOR_TYPE == MotorUtil.MOTOR_STEP_RGL_885)) {
             ret = true;
         }
         return ret;
     }
 
-    public static void setMotorForeword(){
+    public static void setMotorForeword() {
         //foreword
-        Log.d("HBK-885","Foreword isStepMotor():" + isStepMotor());
-        if(isStepMotor()) {
+        Log.d("HBK-885", "Foreword isStepMotor():" + isStepMotor());
+        if (isStepMotor()) {
             writeSys(MANUAL_MOTOR_NODE, PLUS_VALUE);
-        }else{
+        } else {
             writeSys(MANUAL_FOCUS_IO_FOREWORD, MANUAL_FOCUS_IO_FOREWORD_ON);
             writeSys(MANUAL_FOCUS_IO_BACKWARD, MANUAL_FOCUS_IO_BACKWARD_OFF);
         }
@@ -157,7 +157,7 @@ public class MotorUtil {
 
     public static void setMotorBackward() {
         //backward
-        Log.d("HBK-885","Backward isStepMotor():" + isStepMotor());
+        Log.d("HBK-885", "Backward isStepMotor():" + isStepMotor());
         if (isStepMotor()) {
             writeSys(MANUAL_MOTOR_NODE, REDUCE_VALUE);
         } else {
@@ -185,7 +185,7 @@ public class MotorUtil {
         }
     }
 
-    public static void setDCMotorTurnRound(){
+    public static void setDCMotorTurnRound() {
         if (DCDirectionValueIOF.equals(MANUAL_FOCUS_IO_FOREWORD_ON)) {
             DCDirectionValueIOF = MANUAL_FOCUS_IO_FOREWORD_OFF;
             DCDirectionValueIOB = MANUAL_FOCUS_IO_BACKWARD_ON;
@@ -195,7 +195,7 @@ public class MotorUtil {
         }
     }
 
-    public static void setSteppingMotorTurnRound(){
+    public static void setSteppingMotorTurnRound() {
         if (steppingdDirectionValue.equals(PLUS_VALUE)) {
             steppingdDirectionValue = REDUCE_VALUE;
         } else {
@@ -203,23 +203,23 @@ public class MotorUtil {
         }
     }
 
-    public static void setMotorRun(){
+    public static void setMotorRun() {
         //foreword
-        Log.d("HBK-885","isStepMotor():" + isStepMotor());
-        if(isStepMotor()){
+        Log.d("HBK-885", "isStepMotor():" + isStepMotor());
+        if (isStepMotor()) {
             writeSys(MANUAL_MOTOR_NODE, steppingdDirectionValue);
-            Log.d("HBK-885","writeSys:" + MANUAL_MOTOR_NODE+" "+steppingdDirectionValue);
-        }else{
+            Log.d("HBK-885", "writeSys:" + MANUAL_MOTOR_NODE + " " + steppingdDirectionValue);
+        } else {
             writeSys(MANUAL_FOCUS_IO_FOREWORD, DCDirectionValueIOF);
             writeSys(MANUAL_FOCUS_IO_BACKWARD, DCDirectionValueIOB);
         }
     }
 
-    public static void setMotorIOStartStatus(){
+    public static void setMotorIOStartStatus() {
         steppingdDirectionValue = PLUS_VALUE;
         DCDirectionValueIOF = MANUAL_FOCUS_IO_FOREWORD_ON;
         DCDirectionValueIOB = MANUAL_FOCUS_IO_BACKWARD_OFF;
-        Log.d("HBK-885","PLUS_VALUE" + steppingdDirectionValue);
+        Log.d("HBK-885", "PLUS_VALUE" + steppingdDirectionValue);
     }
 
     /*****************************************
@@ -227,16 +227,16 @@ public class MotorUtil {
      * parameter: ①写的设备文件(IO口)，②值
      * return: 无
      *****************************************/
-    private static void writeSys(String dir,String value){
+    private static void writeSys(String dir, String value) {
         File file = new File(dir);
-        try{
+        try {
             OutputStream os = new FileOutputStream(file);
-            if(os!=null){
+            if (os != null) {
                 byte[] data = value.getBytes();
                 os.write(data);
                 os.close();
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -246,20 +246,20 @@ public class MotorUtil {
      * parameter: ①步数
      * return: 无
      *****************************************/
-    public static void setMotorRunInOrderStep(int step){
+    public static void setMotorRunInOrderStep(int step) {
         Log.d("HBK-BC", "steppingdDirectionValue = " + steppingdDirectionValue);
         String[] steppingdDirection = steppingdDirectionValue.split(" ");
-        if(steppingdDirection[0] == null || steppingdDirection[1] == null){
+        if (steppingdDirection[0] == null || steppingdDirection[1] == null) {
             return;
         }
 
         Log.d("HBK-BC", "steppingdDirection[0] = " + steppingdDirection[0] + ",steppingdDirection[1] = " + steppingdDirection[1]);
-        if(steppingdDirection[0].equals(YS_DIRECTION_PLUS)){
+        if (steppingdDirection[0].equals(YS_DIRECTION_PLUS)) {
             steppingdDirectionValue = PLUS_VALUE_YS_NO_STEP + step;
             PLUS_VALUE = steppingdDirectionValue;
             Log.d("HBK-BC", "steppingdDirectionValue = " + steppingdDirectionValue);
             writeSys(MANUAL_MOTOR_NODE, steppingdDirectionValue);
-        } else if (steppingdDirection[0].equals(YS_DIRECTION_REDUCE)){
+        } else if (steppingdDirection[0].equals(YS_DIRECTION_REDUCE)) {
             steppingdDirectionValue = REDUCE_VALUE_YS_NO_STEP + step;
             REDUCE_VALUE = steppingdDirectionValue;
             Log.d("HBK-BC", "steppingdDirectionValue = " + steppingdDirectionValue);
@@ -267,5 +267,9 @@ public class MotorUtil {
         } else {
             Log.d("HBK-BC", "steppingdDirectionValue = null");
         }
+    }
+
+    public static void resetStep() {
+        TraversalGapStep = 1000;
     }
 }
