@@ -57,6 +57,8 @@ public class CameraService extends Service {
     private int mTakePicCount = 0;
     private final int LIMIT_TAKE_PIC = 1;
     private boolean isStart = false;
+    //(长按home键之后的操作：0表示只进行对焦,1表示只进行校正,2表示进行对焦和校正)
+    private String OPERATION_LONG_PRESS_HOME = "";
     private Runnable mOverTimeRunnable;
     /**
      * 纯图像，逐次逼近算法
@@ -190,6 +192,9 @@ public class CameraService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
+            //获取一数长按home键调起对焦服务的intent附带的信息,0- focus 1-keystone 2- focus and keystoen
+            OPERATION_LONG_PRESS_HOME = intent.getStringExtra("action");
+            LogUtil.d("onStartCommand OPERATION_LONG_PRESS_HOME" + OPERATION_LONG_PRESS_HOME);
             LogUtil.d("onStartCommand " + intent.toString() + " isStart=" + isStart);
         }
         LogUtil.d("auto_focus:" + SystemPropertiesAdapter.get("persist.cvte.auto_focus", "1"));
@@ -562,6 +567,7 @@ public class CameraService extends Service {
                 case BROADCAST_PROJECTOR_AUTO_KEYSTONE:
                     // 6. 关闭pattern和摄像头
                     Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
+                    mIntent.putExtra("action", OPERATION_LONG_PRESS_HOME);
                     mContext.sendBroadcast(mIntent);
                     //延时1s，以免上面imu数据没写完
 //                    AtShellCmd.Sudo("/vendor/bin/main -6 3000");
