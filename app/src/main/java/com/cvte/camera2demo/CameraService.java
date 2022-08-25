@@ -57,6 +57,9 @@ public class CameraService extends Service {
     private int mTakePicCount = 0;
     private final int LIMIT_TAKE_PIC = 1;
     private boolean isStart = false;
+    //(长按home键之后的操作：0表示只进行对焦,1表示只进行校正,2表示进行对焦和校正)
+    private String OPERATION_LONG_PRESS_HOME = "";
+    private Runnable mOverTimeRunnable;
     /**
      * 纯图像，逐次逼近算法
      */
@@ -85,7 +88,6 @@ public class CameraService extends Service {
     private static final int START_AUTO_FOCUS = 1001;
 
     private static final int SHOW_PATTERN1 = 1002;
-    private static final int SHOW_BLANK_PATTERN = 10012;
 
     private static final int SHOW_PATTERN2 = 1003;
 
@@ -119,6 +121,8 @@ public class CameraService extends Service {
      * 矫正刷新
      */
     private static final int BROADCAST_KEYSTONE_FINISH_TO_REFRESH = 10011;
+
+    private static final int SHOW_BLANK_PATTERN = 10012;
 
     private PatternManager patternManager;
 
@@ -212,6 +216,8 @@ public class CameraService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
+    boolean isReadyBlank = false;
+
     public void openCamera() {
         if (mCamera2Helper == null) {
             mCamera2Helper = new Camera2Helper(new Camera2Helper.OnCameraListener() {
@@ -248,6 +254,9 @@ public class CameraService extends Service {
                     }
                     //保存自动校正需要的图片到本地
                     saveAutoKeystonePhoto(bitmap);
+                    if (isReadyBlank) {
+                        ImageUtil.saveBlankBitmap("white_tmp.png", bitmap);
+                    }
                 }
             });
         }
@@ -277,7 +286,7 @@ public class CameraService extends Service {
         if (ImageUtil.AutoFocusFinishedToKeystone) {
             String name = "n0" + (mTakePicCount) + ".png";
             if (mTakePicCount != 0) {
-                ImageUtil.saveBitmap1(name, bitmap);
+                ImageUtil.saveBitmap(name, bitmap);
             }
             mTakePicCount++;
             if (mTakePicCount > LIMIT_TAKE_PIC) {
@@ -285,18 +294,18 @@ public class CameraService extends Service {
                 if (CVT_EN_KEYSTONE_TWO_PATTERN) {
                     switchToPatternTwo();
                 } else {
-                    finishAutoFocusService(bitmap);
+                    finishAutoFocusService();
                 }
             }
         } else if (ImageUtil.KeystonePositiveFinishedToNegative) {
             String name = "p0" + (mTakePicCount) + ".png";
             if (mTakePicCount != 0) {
-                ImageUtil.saveBitmap1(name, bitmap);
+                ImageUtil.saveBitmap(name, bitmap);
             }
             mTakePicCount++;
             if (mTakePicCount > LIMIT_TAKE_PIC) {
                 ImageUtil.KeystonePositiveFinishedToNegative = false;
-                finishAutoFocusService(bitmap);
+                finishAutoFocusService();
             }
         }
     }
@@ -305,15 +314,30 @@ public class CameraService extends Service {
         mUIHandler.sendEmptyMessage(SHOW_PATTERN2);
     }
 
-    private void finishAutoFocusService(Bitmap bitmap) {
+    private void finishAutoFocusService() {
         LogUtil.d("结束自动对焦，关闭pattern和摄像头" + Thread.currentThread().getName());
 //        AtShellCmd.Sudo("su");
 //        AtShellCmd.Sudo("xu 7411");
 //        AtShellCmd.Sudo("setenforce 0");
         mUIHandler.sendEmptyMessageDelayed(BROADCAST_PROJECTOR_AUTO_KEYSTONE, 0);
         reopenAsuSpeech();
-        mUIHandler.sendEmptyMessageDelayed(FINISH_AUTO_FOCUS, 500);
+
+        if (isOpenBlank()) {
+            mUIHandler.sendEmptyMessage(SHOW_BLANK_PATTERN);
+        }
+        mUIHandler.sendEmptyMessageDelayed(FINISH_AUTO_FOCUS, 1000);
     }
+
+    /**
+     * 是否打开白板照片，用于避zhang
+     *
+     * @return
+     */
+    private boolean isOpenBlank() {
+        int openBlankFlag = Settings.Global.getInt(mContext.getContentResolver(), "persist.cvte.auto.obstacle.avoidance", 0);
+        return openBlankFlag == 1;
+    }
+
 
     private void closeAsuSpeech() {
         int asuSpeech = Settings.Global.getInt(mContext.getContentResolver(), "settings_asu_speech_enabled", 1);
@@ -529,6 +553,10 @@ public class CameraService extends Service {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                    break;
+                case SHOW_BLANK_PATTERN:
+                    patternManager.showBlankPattern();
+                    isReadyBlank = true;
                     break;
                 case SHOW_PATTERN1:
                     Log.d(TAG, "show_pattern--");

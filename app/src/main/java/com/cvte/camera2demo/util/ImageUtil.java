@@ -500,6 +500,33 @@ public class ImageUtil {
         }
     }
 
+    public static void saveBlankBitmap(String name, Bitmap bitmap) {
+        LogUtil.d("Ready to save picture");
+        String path = "/sdcard/Pictures/";
+        //指定我们想要存储文件的地址
+        LogUtil.d("Save Path=" + mSavePath);
+        //判断指定文件夹的路径是否存在
+        File file = new File(path);
+        if (!file.exists()) {
+            LogUtil.d("mSavePath isn't exist");
+            file.mkdir();
+        } else {
+            //如果指定文件夹创建成功，那么我们则需要进行图片存储操作
+            File saveFile = new File(path, name);
+            try {
+                FileOutputStream saveImgOut = new FileOutputStream(saveFile);
+                // compress - 压缩的意思
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, saveImgOut);
+                //存储完成后需要清除相关的进程
+                saveImgOut.flush();
+                saveImgOut.close();
+                LogUtil.d("The picture is save to your phone!");
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
     /**
      * Save Bitmap
      */
