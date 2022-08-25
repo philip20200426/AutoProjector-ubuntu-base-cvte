@@ -191,6 +191,9 @@ public class CameraService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
+            //获取一数长按home键调起对焦服务的intent附带的信息,0- focus 1-keystone 2- focus and keystoen
+            OPERATION_LONG_PRESS_HOME = intent.getStringExtra("action");
+            LogUtil.d("onStartCommand OPERATION_LONG_PRESS_HOME" + OPERATION_LONG_PRESS_HOME);
             LogUtil.d("onStartCommand " + intent.toString() + " isStart=" + isStart);
         }
         LogUtil.d("auto_focus:" + SystemPropertiesAdapter.get("persist.cvte.auto_focus", "1"));
@@ -575,6 +578,7 @@ public class CameraService extends Service {
                 case BROADCAST_PROJECTOR_AUTO_KEYSTONE:
                     Log.d(TAG, "send cvte.intent.action.ProjectorAutoKeystone");
                     Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
+                    mIntent.putExtra("action", OPERATION_LONG_PRESS_HOME);
                     mContext.sendBroadcast(mIntent);
                     //延时1s，以免上面imu数据没写完
 //                    AtShellCmd.Sudo("/vendor/bin/main -6 3000");
