@@ -52,7 +52,7 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
     public static int SIZE_WIDTH = 1920;
     public static int SIZE_HEIGHT = 1080;
 
-    private Semaphore mCameraOpenCloseLock = new Semaphore(1);
+    private final Semaphore mCameraOpenCloseLock = new Semaphore(1);
 
     private HandlerThread mBackgroundThread;
     private Handler mBackgroundHandler;
@@ -218,7 +218,7 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
 
         // 是否支持闪光灯,TV上不需要
         Boolean flashAvailable = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
-        boolean mFlashSupported = flashAvailable == null ? false : flashAvailable;
+        boolean mFlashSupported = flashAvailable != null && flashAvailable;
 
         mFpsRanges = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
         if (mOpenDebug) {
@@ -395,12 +395,12 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
         if (mFpsRanges != null) {
             Range<Integer> fpsRange = mFpsRanges[(mFpsRanges.length - 1)];
 //            Range<Integer> fpsRange = mFpsRanges[0];
-            Log.d("HBK-FPS","mFpsRanges.length = " + mFpsRanges.length);
-            Log.d("HBK-FPS","(mFpsRanges.length - 1) = " + (mFpsRanges.length - 1));
-            Log.d("HBK-FPS","mFpsRanges[(mFpsRanges.length - 1)] = " + mFpsRanges[(mFpsRanges.length - 1)]);
-            Log.d("HBK-FPS","fpsRange = " + fpsRange);
-            for(int i = 0; i < mFpsRanges.length; i++) {
-                Log.d("HBK-FPS","mFpsRanges[" + i + "] = " + mFpsRanges[i]);
+            Log.d("HBK-FPS", "mFpsRanges.length = " + mFpsRanges.length);
+            Log.d("HBK-FPS", "(mFpsRanges.length - 1) = " + (mFpsRanges.length - 1));
+            Log.d("HBK-FPS", "mFpsRanges[(mFpsRanges.length - 1)] = " + mFpsRanges[(mFpsRanges.length - 1)]);
+            Log.d("HBK-FPS", "fpsRange = " + fpsRange);
+            for (int i = 0; i < mFpsRanges.length; i++) {
+                Log.d("HBK-FPS", "mFpsRanges[" + i + "] = " + mFpsRanges[i]);
             }
             builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
             LogUtil.d("set fps range = " + fpsRange.toString());
@@ -434,12 +434,15 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
             mProcessHandler.post(new Runnable() {
                 @Override
                 public void run() {
+                    long now = SystemClock.uptimeMillis();
                     // bitmap
                     Bitmap bitmap = ImageUtil.nv21ToBitmap1(yuv, SIZE_WIDTH, SIZE_HEIGHT);
-
+                    long duration = SystemClock.uptimeMillis() - now;
+                    Log.d(TAG, "create bitmap duration = " + duration);
                     if (mCameraListener != null) {
-                        mCameraListener.onCaptureComplete(bitmap, null);
+                        mCameraListener.onCaptureComplete(bitmap, null, duration);
                     }
+
                 }
             });
         }
@@ -451,7 +454,7 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
 
         void onCameraError(int error);
 
-        void onCaptureComplete(Bitmap bitmap, File file);
+        void onCaptureComplete(Bitmap bitmap, File file, long duration);
     }
 
 

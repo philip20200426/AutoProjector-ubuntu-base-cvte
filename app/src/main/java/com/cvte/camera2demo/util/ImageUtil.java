@@ -20,7 +20,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
-import java.util.Arrays;
 
 
 /**
@@ -35,8 +34,6 @@ import java.util.Arrays;
 public class ImageUtil {
     private static final String TAG = "ImageUtil";
     private static final String mSavePath = "/sdcard/DCIM/";
-    ;
-
 
     public static byte[] getI420DataFromImage(Image image) {
         Rect crop = image.getCropRect();
@@ -453,9 +450,8 @@ public class ImageUtil {
      * Save Bitmap
      */
     public static void saveBitmap(String name, Bitmap bitmap) {
-        LogUtil.d("Ready to save picture");
+        LogUtil.d("Ready to save picture" + name);
         //指定我们想要存储文件的地址
-        LogUtil.d("Save Path=" + mSavePath);
         //判断指定文件夹的路径是否存在
         File file = new File(mSavePath);
         if (!file.exists()) {
@@ -471,12 +467,66 @@ public class ImageUtil {
                 //存储完成后需要清除相关的进程
                 saveImgOut.flush();
                 saveImgOut.close();
-                LogUtil.d("The picture is save to your phone!");
+                LogUtil.d("Save Path:" + saveFile.getAbsolutePath());
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
         }
     }
+
+    /**
+     * Save Bitmap
+     */
+    public static void saveBitmap1(String name, Bitmap bitmap) {
+        //判断指定文件夹的路径是否存在
+        File file = new File(mSavePath);
+        if (!file.exists()) {
+            LogUtil.d(mSavePath + " isn't exist");
+            file.mkdir();
+        } else {
+            //如果指定文件夹创建成功，那么我们则需要进行图片存储操作
+            File saveFile = new File(mSavePath, name);
+            try {
+                FileOutputStream saveImgOut = new FileOutputStream(saveFile);
+                // compress - 压缩的意思
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, saveImgOut);
+                //存储完成后需要清除相关的进程
+                saveImgOut.flush();
+                saveImgOut.close();
+                LogUtil.d("filePath:" + saveFile.getAbsolutePath());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Save Bitmap
+     */
+    public static void saveBlankBitmap(Bitmap bitmap) {
+        String path = "/sdcard/Pictures/";
+        //判断指定文件夹的路径是否存在
+        File file = new File(path);
+        if (!file.exists()) {
+            LogUtil.d(path + " isn't exist");
+            file.mkdir();
+        } else {
+            //如果指定文件夹创建成功，那么我们则需要进行图片存储操作
+            File saveFile = new File(path, "white_tmp.png");
+            try {
+                FileOutputStream saveImgOut = new FileOutputStream(saveFile);
+                // compress - 压缩的意思
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, saveImgOut);
+                //存储完成后需要清除相关的进程
+                saveImgOut.flush();
+                saveImgOut.close();
+                LogUtil.d(" filePath:" + saveFile.getAbsolutePath());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
 
     /**
      * 将Bitmap存为 .bmp格式图片
@@ -633,23 +683,47 @@ public class ImageUtil {
 
     public static void cleanBitmapPool() {
         for (int i = 0; i < BITMAP_MAX_COUNT; i++) {
-            bitmapPool[i] = null;
-
+            Bitmap bitmap = bitmapPool[i];
+            if (bitmap != null) {
+                bitmap.recycle();
+                bitmapPool[i] = null;
+            }
         }
     }
 
     /**
-     * 记录拍照 位图池计数器
+     * 删除照片
+     *
+     * @param prefix 照片前缀
      */
-    public static int bitmapPoolCounter;
+    public static void removeLocalImages(String prefix) {
+        File file = new File(ImageUtil.getmSavePath());
+        if (file.exists()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File f : files) {
+                    if (f.getName().startsWith(prefix)) {
+                        f.delete();
+                    }
+                }
+            }
+        }
+    }
+
     /**
-     * 位图池最大计数器
+     * 记录拍照 拍照图片大小
      */
-    public static int bitmapPoolBiggestCounter;
+    public static int bitmapPoolLength;
     /**
-     * 位图池最大值
+     * 位图清晰度最高图片索引
+     */
+    public static int bitmapPoolBiggestIndex;
+    /**
+     * 位图清晰度最大值
      */
     public static double bitmapPoolBiggestValue;
+
+    public static double lastBitmapPoolBiggestValue;
     /**
      * 位图池最大计数检查
      */
@@ -664,9 +738,10 @@ public class ImageUtil {
     public static int bitmapPoolMaxCountCheck = 0;
 
     public static void initBitmapPool() {
-        bitmapPoolCounter = 0;
-        bitmapPoolBiggestCounter = 0;
+        bitmapPoolLength = 0;
+        bitmapPoolBiggestIndex = 0;
         bitmapPoolBiggestValue = 0.0;
+        lastBitmapPoolBiggestValue = 0.0;
         bitmapPoolBiggestCountCheck = 0;
         bitmapPoolBiggestValueCheck = 0.0;
         bitmapPoolMaxCountCheck = 0;
@@ -675,15 +750,14 @@ public class ImageUtil {
     }
 
     public static void resetBitmapPool() {
-        bitmapPoolCounter = 0;
-        bitmapPoolBiggestCounter = 0;
+        bitmapPoolLength = 0;
+        bitmapPoolBiggestIndex = 0;
         bitmapPoolBiggestValue = 0.0;
         bitmapPoolBiggestCountCheck = 0;
         bitmapPoolBiggestValueCheck = 0.0;
         bitmapPoolMaxCountCheck = 0;
         cleanBitmapPool();
         SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
-        MotorUtil.resetStep();
     }
 
 }

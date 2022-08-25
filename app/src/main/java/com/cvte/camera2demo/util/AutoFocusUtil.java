@@ -6,6 +6,9 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.cvte.adapter.android.os.SystemPropertiesAdapter;
+import com.cvte.camera2demo.ImageManager;
+
+import org.opencv.core.Mat;
 
 public class AutoFocusUtil {
     /**
@@ -264,11 +267,12 @@ public class AutoFocusUtil {
 
 
     public static void setAutoFocusTraversalByStep(int step) {
+        //如果发生重新流程，触发限位记录应清空
+        MotorUtil.turnRoundStep = 0;
         //跑500步 同时拍照，并返回拍摄的图片集
         Log.d("HBK-BC", "resetBitmapPool");
         //1.复位拍照数据
         ImageUtil.resetBitmapPool();
-
         Log.d("HBK-BC", "PERSIST_BEGIN_TAKE_PHOTO=1");
         //2.开始拍照
         SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "1");
@@ -278,18 +282,40 @@ public class AutoFocusUtil {
         //4.跑完500步，在BorderCheck中收到结束UEvent结束拍照
     }
 
+    /**
+     * 对焦找到最清晰的点，根据下标回到相应位置
+     * step=MotorUtil.TraversalGapStep-ImageUtil.bitmapPoolBiggestIndex * MotorUtil.TraversalGapStep / ImageUtil.bitmapPoolLength
+     * 目前存在问题：
+     * 1.发生反转回到清晰的图片位置不对
+     * 2.回到最清晰位置触发了限位
+     * 3.发生反转，电机反转步数太大，需要和驱动确认，目前添加了经验值发生反转：马达反转步数+清晰图（步数）（待测试）
+     */
     public static void setAutoFocusToBitmapPoolPosition() {
         Log.d("HBK-BC", "ToBitmapPoolPosition");
-
         //确认过check OK之后，回到clearest过程的回调量
-        int step = MotorUtil.TraversalGapStep - ImageUtil.bitmapPoolBiggestCounter * MotorUtil.TraversalGapStep / ImageUtil.bitmapPoolCounter;
-        Log.d("HBK-GAP", "[END END] clearest过程的回调量" + step);
-        if (step < 0) {
-            step = 0;
-        } else {
-            step += 50 * 2;
+        int step = MotorUtil.TraversalGapStep - ImageUtil.bitmapPoolBiggestIndex * MotorUtil.TraversalGapStep / ImageUtil.bitmapPoolLength;
+        Log.d("HBK-GAP", "[END] 最清晰图片回调量" + step);
+        //电机状态 3时候可能会走了异常步数,
+        if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
+            int totalStep = MotorUtil.turnRoundStep;
+            step = totalStep - ImageUtil.bitmapPoolBiggestIndex * totalStep / ImageUtil.bitmapPoolLength;
+            Log.d("HBK-GAP", "[END] 发生反转重新计算-总行程：" + totalStep + "返回清晰图片回调量：" + step);
         }
+        //不能出现负数
+        step = Math.max(step, 0);
         MotorUtil.setMotorRunInOrderStep(step);
     }
 
+    public static void setAutoFocusToBitmapPoolPosition(ImageManager imageManager) {
+        Log.d("HBK-BC", "ToBitmapPoolPosition");
+
+        int step = imageManager.getReturnSteps(MotorUtil.TraversalGapStep);
+        Log.d("HBK-GAP", "[END] 最清晰图片回调量:" + step);
+//        if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
+//            step += 200;
+//        }
+        //不能出现负数
+        step = Math.max(step, 0);
+        MotorUtil.setMotorRunInOrderStep(step);
+    }
 }

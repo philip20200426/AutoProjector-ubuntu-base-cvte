@@ -52,7 +52,24 @@ public class MotorUtil {
 
     public static int TraversalGapTime = 1000;//ms
     public static int routeTotalTime = 0;//ms
-    public static int TraversalGapStep = 1000;
+    /**
+     * 电机默认步数
+     */
+    public static final int DEFAULT_STEP = 1000;
+    /**
+     * 有效步数
+     */
+    public static final int EFFECTIVE_STEPS = 100;
+
+    public static int TraversalGapStep = DEFAULT_STEP;
+    /**
+     * 电机发生了反转
+     */
+    public static boolean IS_TURN_ROUND = false;
+    /**
+     * 驱动返回的电机步数
+     */
+    public static int turnRoundStep = 0;
 
     public MotorUtil() {
         initStepMotorStatus();
@@ -60,7 +77,8 @@ public class MotorUtil {
 
     public static void initStepMotorStatus() {
         Log.d("HBK-Y", "initStepMotorStatus");
-        int motorType = SystemPropertiesAdapter.getInt("ro.CVT_DEF_STEP_MOTOR_TYPE", 999);
+        int motorType = SystemPropertiesAdapter.getInt("ro.CVT_DEF_STEP_MOTOR_TYPE", 2);
+        Log.d("HBK-Y", "motorType:" + motorType);
         switch (motorType) {
             case MotorUtil.MOTOR_DC_WANBO: {
                 if (CVT_EN_YISHU_FOCUS) {

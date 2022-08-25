@@ -30,6 +30,7 @@ import com.cvte.camera2demo.util.AutoFocusUtil;
 import com.cvte.camera2demo.util.ImageUtil;
 import com.cvte.camera2demo.util.LogUtil;
 import com.cvte.camera2demo.util.MotorUtil;
+import com.cvte.camera2demo.util.OpenCVUtils;
 import com.cvte.camera2demo.util.PatternManager;
 import com.cvte.camera2demo.util.SaveKeystoneUtil;
 import com.cvte.camera2demo.util.ShellCmd;
@@ -53,11 +54,9 @@ public class CameraService extends Service {
     private long mLastTime = -1L;
 
     private Context mContext;
-    Handler mHandler = new Handler();
     private int mTakePicCount = 0;
     private final int LIMIT_TAKE_PIC = 1;
     private boolean isStart = false;
-    private Runnable mOverTimeRunnable;
     /**
      * 纯图像，逐次逼近算法
      */
@@ -74,7 +73,6 @@ public class CameraService extends Service {
     /**
      * 处理自动对焦相关耗时任务
      */
-    private Looper autoFocusLooper;
     private CameraServiceHandler autoFocusHandler;
     /**
      * ui更新相关
@@ -87,6 +85,7 @@ public class CameraService extends Service {
     private static final int START_AUTO_FOCUS = 1001;
 
     private static final int SHOW_PATTERN1 = 1002;
+    private static final int SHOW_BLANK_PATTERN = 10012;
 
     private static final int SHOW_PATTERN2 = 1003;
 
@@ -127,6 +126,8 @@ public class CameraService extends Service {
      * keystoneRefreshTimes 梯形校正次数
      */
     private int keystoneRefreshTimes = 0;
+
+    private ImageManager imageManager;
 
     public CameraService() {
     }
@@ -193,19 +194,23 @@ public class CameraService extends Service {
             LogUtil.d("onStartCommand " + intent.toString() + " isStart=" + isStart);
         }
         LogUtil.d("auto_focus:" + SystemPropertiesAdapter.get("persist.cvte.auto_focus", "1"));
-        //设置 关闭 开机启动自动对焦 操作在tvAPI中间件进行
-//        if (isStart || SystemPropertiesAdapter.get("persist.cvte.auto_focus", "1").equals("0")) {
-//            return super.onStartCommand(intent, flags, startId);
+//        try {
+//            Thread.sleep(8_000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
 //        }
-        isStart = true;
-        MotorUtil.initStepMotorStatus();
-        mContext = CameraService.this.getApplicationContext();
-        patternManager = new PatternManager(mContext);
-        mUIHandler.sendEmptyMessage(SHOW_PATTERN1);
-        initKeystone();
-        removeLocalImgs();
-        startForeground();
-        autoFocusHandler.sendEmptyMessageDelayed(START_AUTO_FOCUS, 300);
+        //设置 关闭 开机启动自动对焦 操作在tvAPI中间件进行
+        if (!isStart) {
+            mContext = CameraService.this.getApplicationContext();
+            startForeground();
+            MotorUtil.initStepMotorStatus();
+            initKeystone();
+            patternManager = new PatternManager(mContext);
+            mUIHandler.sendEmptyMessage(SHOW_PATTERN1);
+            imageManager = new ImageManager();
+            openCamera();
+            isStart = true;
+        }
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -214,7 +219,9 @@ public class CameraService extends Service {
             mCamera2Helper = new Camera2Helper(new Camera2Helper.OnCameraListener() {
                 @Override
                 public void onCameraStarted() {
-                    removeLocalImgs();
+//                    removeLocalImgs();
+                    Log.d(TAG, "onCameraStarted");
+                    autoFocusHandler.sendEmptyMessageDelayed(START_AUTO_FOCUS, 300);
                 }
 
 
@@ -224,16 +231,17 @@ public class CameraService extends Service {
                 }
 
                 @Override
-                public void onCaptureComplete(Bitmap bitmap, File file) {
-                    long now = SystemClock.uptimeMillis();
-                    if (mLastTime != -1) {
-                        Log.d(TAG, " get bitmap duration = " + (now - mLastTime));
-                    }
-                    mLastTime = now;
+                public void onCaptureComplete(Bitmap bitmap, File file, long duration) {
                     if (CVT_EN_AUTO_FOCUS_BORDER_CHECK) {
                         //保存图片到运存上的数据池
                         if (beginTakePhoto()) {
-                            saveBitmapToDataPoolOnRAM(bitmap);
+//                            saveBitmapToDataPoolOnRAM(bitmap);
+                            ImageBean imageBean = new ImageBean();
+                            imageBean.setBitmap(bitmap);
+                            imageBean.setIndex(imageManager.getImageSize());
+                            imageBean.setBitmap(bitmap);
+                            imageBean.setDuration(duration);
+                            imageManager.addImage(imageBean);
                         }
                     } else {
                         // 计算拉普拉斯清晰度
@@ -242,11 +250,23 @@ public class CameraService extends Service {
                     }
                     //保存自动校正需要的图片到本地
                     saveAutoKeystonePhoto(bitmap);
+                    if (isReadyBlankPattern) {
+//                        OpenCVUtils.saveBlankPattern(bitmap);
+                        ImageUtil.saveBlankBitmap(bitmap);
+                    }
                 }
             });
         }
 
         mCamera2Helper.openCamera(this);
+    }
+
+    boolean isReadyBlankPattern = false;
+
+    private void saveBlankPattern() {
+        Log.d(TAG, "saveBlankPattern:");
+        //显示空白Pattern
+        mUIHandler.sendEmptyMessage(SHOW_BLANK_PATTERN);
     }
 
     private boolean beginTakePhoto() {
@@ -255,9 +275,9 @@ public class CameraService extends Service {
     }
 
     private void saveBitmapToDataPoolOnRAM(Bitmap bitmap) {
-        if (ImageUtil.bitmapPoolCounter <= ImageUtil.BITMAP_MAX_COUNT) {
-            ImageUtil.bitmapPool[ImageUtil.bitmapPoolCounter] = bitmap;
-            ImageUtil.bitmapPoolCounter++;
+        if (ImageUtil.bitmapPoolLength <= ImageUtil.BITMAP_MAX_COUNT) {
+            ImageUtil.bitmapPool[ImageUtil.bitmapPoolLength] = bitmap;
+            ImageUtil.bitmapPoolLength++;
         }
     }
 
@@ -271,7 +291,7 @@ public class CameraService extends Service {
         if (ImageUtil.AutoFocusFinishedToKeystone) {
             String name = "n0" + (mTakePicCount) + ".png";
             if (mTakePicCount != 0) {
-                ImageUtil.saveBitmap(name, bitmap);
+                ImageUtil.saveBitmap1(name, bitmap);
             }
             mTakePicCount++;
             if (mTakePicCount > LIMIT_TAKE_PIC) {
@@ -279,36 +299,34 @@ public class CameraService extends Service {
                 if (CVT_EN_KEYSTONE_TWO_PATTERN) {
                     switchToPatternTwo();
                 } else {
-                    finishAutoFocusService();
+                    finishAutoFocusService(bitmap);
                 }
             }
         } else if (ImageUtil.KeystonePositiveFinishedToNegative) {
             String name = "p0" + (mTakePicCount) + ".png";
             if (mTakePicCount != 0) {
-                ImageUtil.saveBitmap(name, bitmap);
+                ImageUtil.saveBitmap1(name, bitmap);
             }
             mTakePicCount++;
             if (mTakePicCount > LIMIT_TAKE_PIC) {
                 ImageUtil.KeystonePositiveFinishedToNegative = false;
-                finishAutoFocusService();
+                finishAutoFocusService(bitmap);
             }
         }
     }
 
     private void switchToPatternTwo() {
         mUIHandler.sendEmptyMessage(SHOW_PATTERN2);
-        //延时500ms，以免下次拍照拍的还是上次显示的图片
-        mUIHandler.sendEmptyMessageDelayed(KEYSTONE_POSITIVE_FINISHED_TO_NEGATIVE, 1000);
     }
 
-    private void finishAutoFocusService() {
+    private void finishAutoFocusService(Bitmap bitmap) {
         LogUtil.d("结束自动对焦，关闭pattern和摄像头" + Thread.currentThread().getName());
 //        AtShellCmd.Sudo("su");
 //        AtShellCmd.Sudo("xu 7411");
 //        AtShellCmd.Sudo("setenforce 0");
         mUIHandler.sendEmptyMessageDelayed(BROADCAST_PROJECTOR_AUTO_KEYSTONE, 0);
         reopenAsuSpeech();
-        mUIHandler.sendEmptyMessageDelayed(FINISH_AUTO_FOCUS, 0);
+        saveBlankPattern();
     }
 
     private void closeAsuSpeech() {
@@ -369,6 +387,12 @@ public class CameraService extends Service {
         if (CVT_EN_AUTO_FOCUS_BORDER_CHECK) {
             BorderCheckReceiver.getInstance().stopObserving();
         }
+        if (mUIHandler != null) {
+            mUIHandler.removeCallbacksAndMessages(null);
+        }
+        if (autoFocusHandler != null) {
+            autoFocusHandler.removeCallbacksAndMessages(null);
+        }
         LogUtil.d("onDestroy");
     }
 
@@ -395,7 +419,7 @@ public class CameraService extends Service {
         AutoFocusUtil.setAutoFocusOrigin();
 
         // 2. 马达转动整个过程拍摄所有画面
-        openCamera();
+//        openCamera();
 
         AutoFocusUtil.setAutoFocusTraversal();
 
@@ -415,7 +439,7 @@ public class CameraService extends Service {
         SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "999");
 //        ImageUtil.resetBitmapPool();
         mUIHandler.sendEmptyMessage(REMOVE_PATTERN);
-        mUIHandler.sendEmptyMessageDelayed(FINISH_AUTO_FOCUS, 0);
+        mUIHandler.sendEmptyMessageDelayed(FINISH_AUTO_FOCUS, 50);
     }
 
 
@@ -452,12 +476,11 @@ public class CameraService extends Service {
     /*****************************************
      * function：计算清晰度（无gray转化，因为投影摄像头默认是黑白的）
      * @param srcBitmap 需要计算的图片
-     * @return Bitmap
+     *
      *****************************************/
     public void toClarityByOpenCVWithNoGray(Bitmap srcBitmap) {
         int kernel_size = 3;
         int ddepth = CvType.CV_16U;
-
         Mat mat = new Mat();
         Utils.bitmapToMat(srcBitmap, mat);
         mat = cutImgROI(mat);
@@ -480,6 +503,8 @@ public class CameraService extends Service {
         return new Mat(bitmap, areaRow, areaCol);
     }
 
+    private long startAutoFocusTime;
+
     /**
      * 自动对焦业务处理
      */
@@ -493,62 +518,74 @@ public class CameraService extends Service {
             switch (msg.what) {
                 case START_AUTO_FOCUS:
                     try {
-                        Log.d(TAG, "start autoFocus:" + Thread.currentThread().getName());
+                        startAutoFocusTime = SystemClock.uptimeMillis();
+                        Log.d(TAG, "start autoFocus");
                         //超时退出
-                        mUIHandler.sendEmptyMessageDelayed(TIME_OUT_AUTO_FOCUS, 30_000);
-                        Log.d(TAG, "CVT_EN_AUTO_FOCUS_APPROACH:" + CVT_EN_AUTO_FOCUS_APPROACH);
-                        Log.d(TAG, "CVT_EN_AUTO_FOCUS_BORDER_CHECK:" + CVT_EN_AUTO_FOCUS_BORDER_CHECK);
+                        mUIHandler.sendEmptyMessageDelayed(TIME_OUT_AUTO_FOCUS, 33_333);
                         if (CVT_EN_AUTO_FOCUS_APPROACH) {
                             /*AutoFocusMethod② 纯图像，逐次逼近算法*/
-                            openCamera();
+//                            openCamera();
                             AutoFocusMethod.autoFocusStepSuccessiveApproximation();
                         } else if (CVT_EN_AUTO_FOCUS_BORDER_CHECK) {
                             /*AutoFocusMethod③ 纯步数和限位UEvent，逐次逼近算法*/
-                            openCamera();
-//                            ImageUtil.resetBitmapPool();
-                            AutoFocusMethod.autoFocusStepBorderCheckFunc();
+//                            openCamera();
+                            AutoFocusMethod.autoFocusStepBorderCheckFunc(imageManager);
                         } else {
                             /*AutoFocusMethod① 纯图像，时间遍历算法*/
                             autoFocusTraversingMethod();
                         }
+                        //发送imu矫正
                         mUIHandler.sendEmptyMessage(BROADCAST_SAVE_IMU_DATA);
                         // 5. 保存自动校正照片到指定路径
-                        mTakePicCount = 0;
-                        mUIHandler.sendEmptyMessageDelayed(AUTO_FOCUS_FINISHED_TO_KEYSTONE, 1000);
+//                        mTakePicCount = 0;
+                        //发送梯形矫正
+                        mUIHandler.sendEmptyMessage(AUTO_FOCUS_FINISHED_TO_KEYSTONE);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                     break;
                 case SHOW_PATTERN1:
-                    Log.d(TAG, "show_pattern--" + Thread.currentThread().getName());
+                    Log.d(TAG, "show_pattern--");
                     patternManager.showPattern();
                     break;
+                case SHOW_BLANK_PATTERN:
+                    Log.d(TAG, "showWhitePattern--");
+                    patternManager.showWhitePattern();
+                    isReadyBlankPattern = true;
+                    mUIHandler.sendEmptyMessageDelayed(FINISH_AUTO_FOCUS, 1000);
+                    break;
                 case SHOW_PATTERN2:
-                    Log.d(TAG, "show_pattern2--" + Thread.currentThread().getName());
+                    Log.d(TAG, "show_pattern2--");
                     patternManager.showPattern2();
+                    //延时500ms，以免下次拍照拍的还是上次显示的图片
+                    ImageUtil.KeystonePositiveFinishedToNegative = true;
+//                    mTakePicCount = 0;
+//                    mUIHandler.sendEmptyMessageDelayed(KEYSTONE_POSITIVE_FINISHED_TO_NEGATIVE, 1000);
                     break;
                 case REMOVE_PATTERN:
+                    Log.d(TAG, "remove_pattern--");
                     patternManager.removeAllView();
                     break;
                 case TIME_OUT_AUTO_FOCUS:
-                    Log.d(TAG, "timeOut autoFocus--" + Thread.currentThread().getName());
+                    Log.d(TAG, "timeOut autoFocus--");
                     overtimeExit();
                     break;
                 case AUTO_FOCUS_FINISHED_TO_KEYSTONE:
-                    Log.d(TAG, "finish autoFocus to keystone--" + Thread.currentThread().getName());
+                    Log.d(TAG, "finish autoFocus to keystone--");
                     ImageUtil.AutoFocusFinishedToKeystone = true;
                     break;
                 case KEYSTONE_POSITIVE_FINISHED_TO_NEGATIVE:
-                    Log.d(TAG, "keystone positive finished to negative--" + Thread.currentThread().getName());
+                    Log.d(TAG, "keystone positive finished to negative--");
                     ImageUtil.KeystonePositiveFinishedToNegative = true;
-                    mTakePicCount = 0;
+//                    mTakePicCount = 0;
                     break;
                 case FINISH_AUTO_FOCUS:
-                    Log.d(TAG, "finish autoFocus--" + Thread.currentThread().getName());
+
+                    Log.d(TAG, "end autoFocus-耗时：" + (SystemClock.uptimeMillis() - startAutoFocusTime));
+                    removeLocalImgs();
                     patternManager.removeAllView();
                     mCamera2Helper.closeCamera();
                     isStart = false;
-                    mHandler.removeCallbacks(mOverTimeRunnable);
                     if (CVT_EN_AUTO_FOCUS_BORDER_CHECK) {
                         BorderCheckReceiver.getInstance().stopObserving();
                     }
@@ -556,11 +593,12 @@ public class CameraService extends Service {
                     System.exit(0);
                     break;
                 case BROADCAST_SAVE_IMU_DATA:
+                    Log.d(TAG, "send cvte.intent.action.GsensorStoreOnlineImu");
                     // IMU:发送广播让系统存校准后的IMU数据
                     sendMessageForSaveIMUData();
                     break;
                 case BROADCAST_PROJECTOR_AUTO_KEYSTONE:
-                    // 6. 关闭pattern和摄像头
+                    Log.d(TAG, "send cvte.intent.action.ProjectorAutoKeystone");
                     Intent mIntent = new Intent("cvte.intent.action.ProjectorAutoKeystone");
                     mContext.sendBroadcast(mIntent);
                     //延时1s，以免上面imu数据没写完
@@ -580,7 +618,7 @@ public class CameraService extends Service {
                     }
                     break;
                 default:
-                    Log.d(TAG, "handleMessage: " + Thread.currentThread().getName());
+                    Log.d(TAG, "unknown command " + Thread.currentThread().getName());
                     break;
             }
         }
