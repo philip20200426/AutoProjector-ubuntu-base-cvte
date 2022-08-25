@@ -134,11 +134,11 @@ public class AutoFocusMethod {
                     Log.d("HBK-BC", "BC-【2】TURN_ROUND");
                     //设置方向反向
                     MotorUtil.setMotorTurnRound();
-                    //发生回转，往回走的时候多拍 （清晰图片index+1）/bitmapPoolLength 张图片
-                    int optimalNumberOfSteps = getOptimalNumberOfSteps(ImageUtil.bitmapPoolBiggestIndex + 1, ImageUtil.bitmapPoolLength);
-                    Log.d("HBK-BC", "optimalNumberOfSteps: " + optimalNumberOfSteps);
+                    //发生回转，往回走的时候多走 1/3
+//                    int optimalNumberOfSteps = getOptimalNumberOfSteps();
+//                    Log.d("HBK-BC", "optimalNumberOfSteps: " + optimalNumberOfSteps);
                     imageManager.clear();
-                    AutoFocusUtil.setAutoFocusTraversalByStep(optimalNumberOfSteps);
+                    AutoFocusUtil.setAutoFocusTraversalByStep(MotorUtil.TraversalGapStep);
                     AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_WAIT_FOR_CALCULATE_DEF;
                     break;
                 }
@@ -217,20 +217,19 @@ public class AutoFocusMethod {
     /**
      * 设置最佳步数，优化对焦速度
      * 1.数据呈上升趋势，步数1000
-     * 2.数据呈下降趋势第一个值为最大值步数step=TraversalGapStep+TraversalGapStep*scale(当前步数在本次拍照的位置ImageUtil.bitmapPoolBiggestIndex+3/ realBitmapNum)
+     * 2.数据呈下降趋势第一个值为最大值步数
      * 确保能再次拍到之前丢弃掉的图片
-     * 3.电机发生反转step=TraversalGapStep-turnRoundStep
      */
-    private static int getOptimalNumberOfSteps(int biggestIndex, int bitmapLength) {
-//        if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
-//            MotorUtil.TraversalGapStep = MotorUtil.turnRoundStep;
-//        } else {
-//            MotorUtil.TraversalGapStep = MotorUtil.DEFAULT_STEP;
-//        }
+    private static int getOptimalNumberOfSteps() {
+        if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
+            MotorUtil.TraversalGapStep = MotorUtil.turnRoundStep;
+        } else {
+            MotorUtil.TraversalGapStep = MotorUtil.DEFAULT_STEP;
+        }
 //        float scaleStep = (float) biggestIndex / (float) bitmapLength;
         float scaleStep = 1 / 3f;//发生反转，多走1/3
         Log.d("HBK-BC", "scaleStep: " + scaleStep);
-//        MotorUtil.TraversalGapStep += MotorUtil.TraversalGapStep * scaleStep;
+        MotorUtil.TraversalGapStep += MotorUtil.TraversalGapStep * scaleStep;
         return Math.max(MotorUtil.TraversalGapStep, MotorUtil.DEFAULT_STEP);
     }
 
@@ -395,15 +394,7 @@ public class AutoFocusMethod {
         if (imageManager.getMaxLapsIndex() == imageManager.getImageList().size() - 1) {
             Log.d("HBK-BC", "上升趋势，当前方向继续走");
             //1.拉普拉斯值成，触发限位，发动机走的实际步数>100有效，认为找到最清晰值。
-            if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
-                Log.d("HBK-BC", "上升趋势，触发限位，发动机走的实际步数>100有效，认为找到最清晰值");
-                ret = AutoFocusUtil.AUTO_FOCUS_TO_CLEAREST;
-            } else {
-                //2.拉普拉斯值成上升趋势，继续走1000步
-                Log.d("HBK-BC", "上升趋势，触发限位，发动机走的实际步数<100有效，拉普拉斯无效继续查找");
-                ret = AutoFocusUtil.AUTO_FOCUS_INCREASE;
-            }
-//            ret = AutoFocusUtil.AUTO_FOCUS_INCREASE;
+            ret = AutoFocusUtil.AUTO_FOCUS_INCREASE;
         } else if (imageManager.getMaxLapsIndex() <= FIRST_BITMAP_INDEX) {//开始前FIRST_BITMAP_INDEX几张不稳定，index
             Log.d("HBK-BC", "下降趋势，前" + FIRST_BITMAP_INDEX + "张不稳定需要发动反转继续向前");
             //2.拉普拉斯值成上升趋势，继续走1000步

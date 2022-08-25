@@ -115,13 +115,14 @@ public class BorderCheckReceiver {
                             Log.d("HBK-U", "电机走了" + MotorUtil.turnRoundStep + "步触发限位,电机回退" + borderStep + "步，先计算拉普拉斯");
                             SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "2");
                         } else {
+
                             SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
                             AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_TURN_ROUND;
                         }
                         MotorUtil.IS_TURN_ROUND = false;
                     }
-                    break;
                 }
+                break;
                 default: {
                     break;
                 }

@@ -55,7 +55,7 @@ public class MotorUtil {
     /**
      * 电机默认步数
      */
-    public static final int DEFAULT_STEP = 1000;
+    public static final int DEFAULT_STEP = 1200;
     /**
      * 有效步数
      */

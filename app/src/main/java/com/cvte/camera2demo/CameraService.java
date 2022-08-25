@@ -194,11 +194,6 @@ public class CameraService extends Service {
             LogUtil.d("onStartCommand " + intent.toString() + " isStart=" + isStart);
         }
         LogUtil.d("auto_focus:" + SystemPropertiesAdapter.get("persist.cvte.auto_focus", "1"));
-//        try {
-//            Thread.sleep(8_000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
         //设置 关闭 开机启动自动对焦 操作在tvAPI中间件进行
         if (!isStart) {
             mContext = CameraService.this.getApplicationContext();
@@ -250,23 +245,11 @@ public class CameraService extends Service {
                     }
                     //保存自动校正需要的图片到本地
                     saveAutoKeystonePhoto(bitmap);
-                    if (isReadyBlankPattern) {
-//                        OpenCVUtils.saveBlankPattern(bitmap);
-                        ImageUtil.saveBlankBitmap(bitmap);
-                    }
                 }
             });
         }
 
         mCamera2Helper.openCamera(this);
-    }
-
-    boolean isReadyBlankPattern = false;
-
-    private void saveBlankPattern() {
-        Log.d(TAG, "saveBlankPattern:");
-        //显示空白Pattern
-        mUIHandler.sendEmptyMessage(SHOW_BLANK_PATTERN);
     }
 
     private boolean beginTakePhoto() {
@@ -326,7 +309,7 @@ public class CameraService extends Service {
 //        AtShellCmd.Sudo("setenforce 0");
         mUIHandler.sendEmptyMessageDelayed(BROADCAST_PROJECTOR_AUTO_KEYSTONE, 0);
         reopenAsuSpeech();
-        saveBlankPattern();
+        mUIHandler.sendEmptyMessageDelayed(FINISH_AUTO_FOCUS, 500);
     }
 
     private void closeAsuSpeech() {
@@ -548,12 +531,6 @@ public class CameraService extends Service {
                     Log.d(TAG, "show_pattern--");
                     patternManager.showPattern();
                     break;
-                case SHOW_BLANK_PATTERN:
-                    Log.d(TAG, "showWhitePattern--");
-                    patternManager.showWhitePattern();
-                    isReadyBlankPattern = true;
-                    mUIHandler.sendEmptyMessageDelayed(FINISH_AUTO_FOCUS, 1000);
-                    break;
                 case SHOW_PATTERN2:
                     Log.d(TAG, "show_pattern2--");
                     patternManager.showPattern2();
@@ -580,9 +557,7 @@ public class CameraService extends Service {
 //                    mTakePicCount = 0;
                     break;
                 case FINISH_AUTO_FOCUS:
-
                     Log.d(TAG, "end autoFocus-耗时：" + (SystemClock.uptimeMillis() - startAutoFocusTime));
-                    removeLocalImgs();
                     patternManager.removeAllView();
                     mCamera2Helper.closeCamera();
                     isStart = false;

@@ -25,7 +25,7 @@ public class OpenCVUtils {
      */
     public static double calculateOneBitmapClarityWithNoGray(Bitmap srcBitmap) {
         int kernel_size = 3;
-        int ddepth = CvType.CV_16U;
+        int ddepth = CvType.CV_8U;
         Mat mat = new Mat();
         Utils.bitmapToMat(srcBitmap, mat);
         mat = cutImgROI(mat);

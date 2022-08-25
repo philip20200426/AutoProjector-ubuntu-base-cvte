@@ -12,13 +12,11 @@ public class PatternManager {
     WindowManager mWindowManager;
     ViewGroup mWindowContainer;
     ViewGroup mWindowContainer2;
-    ViewGroup mWindowBlank;
 
     public PatternManager(Context context) {
         mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         mWindowContainer = (ViewGroup) LayoutInflater.from(context).inflate(R.layout.showpattern, null);
         mWindowContainer2 = (ViewGroup) LayoutInflater.from(context).inflate(R.layout.showpattern2, null);
-        mWindowBlank = (ViewGroup) LayoutInflater.from(context).inflate(R.layout.showblankpattern, null);
     }
 
 
@@ -41,16 +39,6 @@ public class PatternManager {
         mWindowManager.addView(mWindowContainer2, mParams);
     }
 
-    public void showWhitePattern() {
-        WindowManager.LayoutParams mParams = new WindowManager.LayoutParams();
-        mParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
-        mParams.width = WindowManager.LayoutParams.MATCH_PARENT;
-        mParams.height = WindowManager.LayoutParams.MATCH_PARENT;
-        mParams.format = PixelFormat.RGBA_8888;
-        mWindowManager.addView(mWindowBlank, mParams);
-    }
-
-
     public void removeAllView() {
         try {
             if (mWindowContainer != null && mWindowContainer.isAttachedToWindow()) {
@@ -58,9 +46,6 @@ public class PatternManager {
             }
             if (mWindowContainer2 != null && mWindowContainer2.isAttachedToWindow()) {
                 mWindowManager.removeView(mWindowContainer2);
-            }
-            if (mWindowBlank != null && mWindowBlank.isAttachedToWindow()) {
-                mWindowManager.removeView(mWindowBlank);
             }
         } catch (Exception e) {
             e.printStackTrace();

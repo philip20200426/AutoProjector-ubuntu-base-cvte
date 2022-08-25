@@ -308,14 +308,14 @@ public class AutoFocusUtil {
 
     public static void setAutoFocusToBitmapPoolPosition(ImageManager imageManager) {
         Log.d("HBK-BC", "ToBitmapPoolPosition");
-
         int step = imageManager.getReturnSteps(MotorUtil.TraversalGapStep);
         Log.d("HBK-GAP", "[END] 最清晰图片回调量:" + step);
-//        if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
-//            step += 200;
-//        }
-        //不能出现负数
-        step = Math.max(step, 0);
+        step += 200;
+        if (step > MotorUtil.DEFAULT_STEP) {
+            step = MotorUtil.DEFAULT_STEP;
+        }
+//        //不能出现负数
+//        step = Math.max(step, 0);
         MotorUtil.setMotorRunInOrderStep(step);
     }
 }
