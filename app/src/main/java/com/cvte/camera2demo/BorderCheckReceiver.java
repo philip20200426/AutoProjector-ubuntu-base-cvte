@@ -2,12 +2,15 @@ package com.cvte.camera2demo;
 
 import android.content.Context;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.os.UEventObserver;
 import android.util.Log;
 
 import com.cvte.adapter.android.os.SystemPropertiesAdapter;
 import com.cvte.camera2demo.util.AutoFocusUtil;
+import com.cvte.camera2demo.util.ImageUtil;
+import com.cvte.camera2demo.util.MotorUtil;
 import com.cvte.camera2demo.util.ToastUtil;
 
 import static android.security.KeyStore.getApplicationContext;
@@ -28,6 +31,10 @@ public class BorderCheckReceiver {
 
     private static final int STEP_BORDER_SUBSCRIPT = 0;
     private static final int STEP_NUM_SUBSCRIPT = 1;
+    /**
+     * 等待马达状态超时时间
+     */
+    private static final int TIMEOUT = 500;
 
     private BorderCheckReceiver() {
 
@@ -76,33 +83,46 @@ public class BorderCheckReceiver {
             }
 
             int borderType = Integer.parseInt(borderUEvent[STEP_BORDER_SUBSCRIPT]);
+            int borderStep = Integer.parseInt(borderUEvent[STEP_NUM_SUBSCRIPT]);
             switch (borderType) {
                 case EVENT_NO_BORDER_FINISHED: {
+                    mHandler.removeCallbacksAndMessages(null);
                     Log.d("HBK-U", "Receive EVENT_NO_BORDER_FINISHED");
                     SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "2");
                     break;
                 }
                 case EVENT_INNER_BORDER: {
                     Log.d("HBK-U", "Receive INNER_BORDER");
-                    SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
-                    AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_INCREASE;
-//                    mHandler.removeMessages(MSG_DISPLAY_TOAST_INNER_BORDER);
-//                    mHandler.sendEmptyMessage(MSG_DISPLAY_TOAST_INNER_BORDER);
+                    MotorUtil.IS_TURN_ROUND = true;
+                    MotorUtil.turnRoundStep = borderStep;
+                    MotorUtil.TraversalGapStep = MotorUtil.DEFAULT_STEP;
+                    mHandler.postDelayed(timeOutRunnable, TIMEOUT);
                     break;
                 }
                 case EVENT_OUTER_BORDER: {
                     Log.d("HBK-U", "Receive OUTER_BORDER");
-                    SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
-                    AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_TURN_ROUND;
-//                    mHandler.removeMessages(MSG_DISPLAY_TOAST_OUTER_BORDER);
-//                    mHandler.sendEmptyMessage(MSG_DISPLAY_TOAST_OUTER_BORDER);
+                    MotorUtil.turnRoundStep = borderStep;
+                    MotorUtil.IS_TURN_ROUND = true;
+                    MotorUtil.TraversalGapStep = MotorUtil.DEFAULT_STEP;
+                    mHandler.postDelayed(timeOutRunnable, TIMEOUT);
                     break;
                 }
                 case EVENT_BACK_FINISHED: {
-                    SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
-                    AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_TURN_ROUND;
-                    break;
+                    mHandler.removeCallbacksAndMessages(null);
+                    if (MotorUtil.IS_TURN_ROUND) {
+                        MotorUtil.turnRoundStep -= borderStep;
+                        if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
+                            Log.d("HBK-U", "电机走了" + MotorUtil.turnRoundStep + "步触发限位,电机回退" + borderStep + "步，先计算拉普拉斯");
+                            SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "2");
+                        } else {
+
+                            SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
+                            AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_TURN_ROUND;
+                        }
+                        MotorUtil.IS_TURN_ROUND = false;
+                    }
                 }
+                break;
                 default: {
                     break;
                 }
@@ -111,7 +131,21 @@ public class BorderCheckReceiver {
         }
     };
 
-    private Handler mHandler = new Handler() {
+    private final Runnable timeOutRunnable = () -> {
+        Log.d("HBK-U", "等待状态超时，启动超时机制");
+        if (MotorUtil.IS_TURN_ROUND) {
+            if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
+                Log.d("HBK-U", "触发限位大于100，先计算laps:" + MotorUtil.turnRoundStep);
+                SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "2");
+            } else {
+                SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
+                AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_TURN_ROUND;
+            }
+            MotorUtil.IS_TURN_ROUND = false;
+        }
+    };
+
+    private final static Handler mHandler = new Handler(Looper.getMainLooper()) {
         public void handleMessage(Message msg) {
             Context context = getApplicationContext();
             switch (msg.what) {

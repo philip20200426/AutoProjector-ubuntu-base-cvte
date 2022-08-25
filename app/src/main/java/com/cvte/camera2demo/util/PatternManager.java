@@ -39,7 +39,6 @@ public class PatternManager {
         mWindowManager.addView(mWindowContainer2, mParams);
     }
 
-
     public void removeAllView() {
         try {
             if (mWindowContainer != null && mWindowContainer.isAttachedToWindow()) {
