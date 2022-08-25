@@ -12,13 +12,23 @@ public class PatternManager {
     WindowManager mWindowManager;
     ViewGroup mWindowContainer;
     ViewGroup mWindowContainer2;
+    ViewGroup mBlankContainer;
 
     public PatternManager(Context context) {
         mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         mWindowContainer = (ViewGroup) LayoutInflater.from(context).inflate(R.layout.showpattern, null);
         mWindowContainer2 = (ViewGroup) LayoutInflater.from(context).inflate(R.layout.showpattern2, null);
+        mBlankContainer = (ViewGroup) LayoutInflater.from(context).inflate(R.layout.showblankpattern, null);
     }
 
+    public void showBlankPattern() {
+        WindowManager.LayoutParams mParams = new WindowManager.LayoutParams();
+        mParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        mParams.width = WindowManager.LayoutParams.MATCH_PARENT;
+        mParams.height = WindowManager.LayoutParams.MATCH_PARENT;
+        mParams.format = PixelFormat.RGBA_8888;
+        mWindowManager.addView(mBlankContainer, mParams);
+    }
 
     public void showPattern() {
         removeAllView();
@@ -46,6 +56,9 @@ public class PatternManager {
             }
             if (mWindowContainer2 != null && mWindowContainer2.isAttachedToWindow()) {
                 mWindowManager.removeView(mWindowContainer2);
+            }
+            if (mBlankContainer != null && mBlankContainer.isAttachedToWindow()) {
+                mWindowManager.removeView(mBlankContainer);
             }
         } catch (Exception e) {
             e.printStackTrace();
