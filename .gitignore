@@ -1,0 +1,12 @@
+*.iml
+.gradle
+.idea
+/local.properties
+.DS_Store
+/build
+/captures
+/grade*
+app/build/
+opencv/build/
+opencv/.cxx
+gen/
