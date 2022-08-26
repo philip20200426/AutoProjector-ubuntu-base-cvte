@@ -1,4 +1,4 @@
-package com.cvte.camera2demo.util;
+package com.cvte.autoprojector.util;
 
 import static org.opencv.core.Core.mean;
 

@@ -1,12 +1,12 @@
-package com.cvte.camera2demo.util;
+package com.cvte.autoprojector.util;
 
-import static com.cvte.camera2demo.util.Constants.PERSIST_BEGIN_TAKE_PHOTO;
+import static com.cvte.autoprojector.util.Constants.PERSIST_BEGIN_TAKE_PHOTO;
 
 import android.os.Handler;
 import android.util.Log;
 
 import com.cvte.adapter.android.os.SystemPropertiesAdapter;
-import com.cvte.camera2demo.ImageManager;
+import com.cvte.autoprojector.ImageManager;
 
 import org.opencv.core.Mat;
 

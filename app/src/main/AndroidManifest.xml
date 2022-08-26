@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.cvte.camera2demo"
+    package="com.cvte.autoprojector"
     android:sharedUserId="android.uid.system">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -22,7 +22,7 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="com.cvte.camera2demo.CameraService" />
+                <action android:name="com.cvte.autoprojector.CameraService" />
             </intent-filter>
         </service>
         <!--去掉监听开机广播拉起服务，由tvApi来做-->

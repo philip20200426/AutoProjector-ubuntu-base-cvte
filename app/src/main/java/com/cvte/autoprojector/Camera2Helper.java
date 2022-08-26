@@ -1,4 +1,4 @@
-package com.cvte.camera2demo;
+package com.cvte.autoprojector;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -27,9 +27,9 @@ import android.view.Surface;
 import androidx.annotation.NonNull;
 
 
-import com.cvte.camera2demo.util.ImageUtil;
-import com.cvte.camera2demo.util.LogUtil;
-import com.cvte.camera2demo.util.MotorUtil;
+import com.cvte.autoprojector.util.ImageUtil;
+import com.cvte.autoprojector.util.LogUtil;
+import com.cvte.autoprojector.util.MotorUtil;
 
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;

@@ -1,4 +1,4 @@
-package com.cvte.camera2demo;
+package com.cvte.autoprojector;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

@@ -1,10 +1,10 @@
-package com.cvte.camera2demo;
+package com.cvte.autoprojector;
 
 import android.graphics.Bitmap;
 import android.os.SystemClock;
 import android.util.Log;
 
-import com.cvte.camera2demo.util.OpenCVUtils;
+import com.cvte.autoprojector.util.OpenCVUtils;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.cvte.camera2demo.util;
+package com.cvte.autoprojector.util;
 
 import android.content.Context;
 import android.util.DisplayMetrics;
@@ -15,7 +15,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
-import com.cvte.camera2demo.R;
+import com.cvte.autoprojector.R;
 
 import static android.security.KeyStore.getApplicationContext;
 

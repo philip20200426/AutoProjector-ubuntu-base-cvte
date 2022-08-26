@@ -1,4 +1,4 @@
-package com.cvte.camera2demo;
+package com.cvte.autoprojector;
 
 import android.content.Context;
 import android.os.Handler;
@@ -8,13 +8,13 @@ import android.os.UEventObserver;
 import android.util.Log;
 
 import com.cvte.adapter.android.os.SystemPropertiesAdapter;
-import com.cvte.camera2demo.util.AutoFocusUtil;
-import com.cvte.camera2demo.util.ImageUtil;
-import com.cvte.camera2demo.util.MotorUtil;
-import com.cvte.camera2demo.util.ToastUtil;
+import com.cvte.autoprojector.util.AutoFocusUtil;
+import com.cvte.autoprojector.util.ImageUtil;
+import com.cvte.autoprojector.util.MotorUtil;
+import com.cvte.autoprojector.util.ToastUtil;
 
 import static android.security.KeyStore.getApplicationContext;
-import static com.cvte.camera2demo.util.Constants.PERSIST_BEGIN_TAKE_PHOTO;
+import static com.cvte.autoprojector.util.Constants.PERSIST_BEGIN_TAKE_PHOTO;
 
 public class BorderCheckReceiver {
 

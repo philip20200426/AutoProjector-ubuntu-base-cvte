@@ -1,7 +1,7 @@
-package com.cvte.camera2demo;
+package com.cvte.autoprojector;
 
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
-import static com.cvte.camera2demo.util.Constants.PERSIST_BEGIN_TAKE_PHOTO;
+import static com.cvte.autoprojector.util.Constants.PERSIST_BEGIN_TAKE_PHOTO;
 import static org.opencv.core.Core.mean;
 
 import android.app.Notification;
@@ -26,14 +26,14 @@ import androidx.annotation.Nullable;
 
 import com.cvte.adapter.android.os.SystemPropertiesAdapter;
 import com.cvte.at.platform.AtShellCmd;
-import com.cvte.camera2demo.util.AutoFocusUtil;
-import com.cvte.camera2demo.util.ImageUtil;
-import com.cvte.camera2demo.util.LogUtil;
-import com.cvte.camera2demo.util.MotorUtil;
-import com.cvte.camera2demo.util.OpenCVUtils;
-import com.cvte.camera2demo.util.PatternManager;
-import com.cvte.camera2demo.util.SaveKeystoneUtil;
-import com.cvte.camera2demo.util.ShellCmd;
+import com.cvte.autoprojector.util.AutoFocusUtil;
+import com.cvte.autoprojector.util.ImageUtil;
+import com.cvte.autoprojector.util.LogUtil;
+import com.cvte.autoprojector.util.MotorUtil;
+import com.cvte.autoprojector.util.OpenCVUtils;
+import com.cvte.autoprojector.util.PatternManager;
+import com.cvte.autoprojector.util.SaveKeystoneUtil;
+import com.cvte.autoprojector.util.ShellCmd;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;

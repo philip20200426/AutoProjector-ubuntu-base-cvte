@@ -1,4 +1,4 @@
-package com.cvte.camera2demo;
+package com.cvte.autoprojector;
 
 public class ErrorCode {
     public static final int CAMERA_OPEN_ERROR = -1;

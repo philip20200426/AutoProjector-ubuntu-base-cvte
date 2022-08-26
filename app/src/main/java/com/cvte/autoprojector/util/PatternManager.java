@@ -1,4 +1,4 @@
-package com.cvte.camera2demo.util;
+package com.cvte.autoprojector.util;
 
 import android.content.Context;
 import android.graphics.PixelFormat;
@@ -6,7 +6,7 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
-import com.cvte.camera2demo.R;
+import com.cvte.autoprojector.R;
 
 public class PatternManager {
     WindowManager mWindowManager;
