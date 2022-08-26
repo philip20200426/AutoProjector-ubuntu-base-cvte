@@ -26,7 +26,15 @@ def genVersionName() {
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
-    ndkVersion "21.3.6528147"
+
+    // Notice: ndk jenkins server version support!!!
+    // if your local path do not support this version, you can modified here for debug build, No Commit!!! No Push!!!
+    ndkVersion "19.2.5345600"
+
+
+    lintOptions {
+        abortOnError false
+    }
     defaultConfig {
         applicationId "com.cvte.camera2demo"
         minSdkVersion 26
