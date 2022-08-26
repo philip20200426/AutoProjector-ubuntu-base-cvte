@@ -3,6 +3,7 @@
 .idea
 .DS_Store
 /build
+/local.properties
 /captures
 /grade*
 app/build/
