@@ -1,46 +1,55 @@
-plugins {
-    id 'com.android.application'
+apply plugin: 'com.android.application'
+
+
+/******** Jenkins 构建应用版本发布规范，请不要修改 **********/
+def genVersionCode() {
+    def verCode = System.getenv('SERVER_PACKAGE_VERSION_CODE')
+    if (verCode) {
+        return verCode.toInteger()
+    } else {
+        return 1000
+    }
 }
 
-project.ext.set("cvteBuildDate", new Date());
-
-def genVersionName()
-{
-    def formattedDate = (project.ext.cvteBuildDate).format('yyyyMMddHHmmss')
-    return formattedDate
+def genVersionName() {
+    def verName = System.getenv('SERVER_PACKAGE_VERSION_NAME')
+    if (verName) {
+        return verName
+    } else {
+        def cmd = 'git describe --always'
+        verName = cmd.execute().text.trim()
+        return verName + '-DEBUG'
+    }
 }
-
-def genVersionCode(){
-    return ((project.ext.cvteBuildDate).getTime() / 1000).toInteger()
-}
+/******** Jenkins 构建应用版本发布规范，请不要修改 **********/
 
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
 
+    // Notice: ndk jenkins server version support!!!
+    // if your local path do not support this version, you can modified here for debug build, No Commit!!! No Push!!!
+    ndkVersion "19.2.5345600"
+
+
+    lintOptions {
+        abortOnError false
+    }
     defaultConfig {
-        applicationId "com.cvte.camera2demo"
+        applicationId "com.cvte.autoprojector"
         minSdkVersion 26
         targetSdkVersion 29
-//        versionCode 1
-//        versionName "1.0"
+        versionCode genVersionCode()
+        versionName genVersionName()
         ndk{
             // 打包生成的 APK 文件指挥包含 ARM 指令集的动态库
             abiFilters "armeabi-v7a"/*, "arm64-v8a"*/
         }
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
-    defaultConfig.versionName = genVersionName()
-    defaultConfig.versionCode = genVersionCode()
 
 
     signingConfigs {
-//        android_app {
-//            keyAlias 'androiddebugkey'
-//            keyPassword 'android'
-//            storeFile file("mtk9255.keystore")
-//            storePassword 'android'
-//        }
         android_app {
             storeFile file("T950D4.keystore")
             storePassword "roward"
@@ -53,12 +62,14 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.android_app
+            // NOTICE: sign configs only using for debug mode!!! No Commit!!! No Push!!!
+            // signingConfig signingConfigs.android_app
         }
         debug{
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-project.txt'
-            signingConfig signingConfigs.android_app
+            // NOTICE: sign configs only using for debug mode!!! No Commit!!! No Push!!!
+            // signingConfig signingConfigs.android_app
         }
     }
     compileOptions {

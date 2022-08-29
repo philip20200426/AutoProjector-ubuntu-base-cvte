@@ -98,6 +98,10 @@ println "OpenCV: " +openCVersionName + " " + project.buildscript.sourceFile
 android {
     compileSdkVersion 29
 
+    lintOptions {
+        abortOnError false
+    }
+
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 29

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Camera2Demo</string>
+    <string name="app_name">AutoProjector</string>
     <string name="toast_border_check_inner">In the border,inner</string>
     <string name="toast_border_check_outer">In the border,outer</string>
     <string name="toast_border_check_back_finished">In the border,back finished</string>

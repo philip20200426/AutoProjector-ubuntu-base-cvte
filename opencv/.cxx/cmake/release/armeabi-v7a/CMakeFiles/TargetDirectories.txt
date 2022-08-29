@@ -1,3 +1,0 @@
-E:/Android_Project/3.auto_projector/auto_projector_v2/auto_projector_v2/opencv/.cxx/cmake/release/armeabi-v7a/CMakeFiles/opencv_jni_shared.dir
-E:/Android_Project/3.auto_projector/auto_projector_v2/auto_projector_v2/opencv/.cxx/cmake/release/armeabi-v7a/CMakeFiles/edit_cache.dir
-E:/Android_Project/3.auto_projector/auto_projector_v2/auto_projector_v2/opencv/.cxx/cmake/release/armeabi-v7a/CMakeFiles/rebuild_cache.dir
