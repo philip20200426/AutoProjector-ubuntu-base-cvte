@@ -124,6 +124,8 @@ public class CameraService extends Service {
 
     private static final int SHOW_BLANK_PATTERN = 10012;
 
+    private static final int TAKE_PICTURE_DELAY_MS = 1000;
+
     private PatternManager patternManager;
 
     /**
@@ -256,6 +258,7 @@ public class CameraService extends Service {
                     saveAutoKeystonePhoto(bitmap);
                     if (isReadyBlank) {
                         ImageUtil.saveBlankBitmap("white_tmp.png", bitmap);
+                        mUIHandler.sendEmptyMessageDelayed(BROADCAST_PROJECTOR_AUTO_KEYSTONE, 0);
                     }
                 }
             });
@@ -315,17 +318,17 @@ public class CameraService extends Service {
     }
 
     private void finishAutoFocusService() {
-        LogUtil.d("结束自动对焦，关闭pattern和摄像头" + Thread.currentThread().getName());
+        Log.d(TAG,"结束自动对焦，关闭pattern和摄像头" + Thread.currentThread().getName());
 //        AtShellCmd.Sudo("su");
 //        AtShellCmd.Sudo("xu 7411");
 //        AtShellCmd.Sudo("setenforce 0");
-        mUIHandler.sendEmptyMessageDelayed(BROADCAST_PROJECTOR_AUTO_KEYSTONE, 0);
+
         reopenAsuSpeech();
 
         if (isOpenBlank()) {
             mUIHandler.sendEmptyMessage(SHOW_BLANK_PATTERN);
         }
-        mUIHandler.sendEmptyMessageDelayed(FINISH_AUTO_FOCUS, 1000);
+        mUIHandler.sendEmptyMessageDelayed(FINISH_AUTO_FOCUS, 2000);
     }
 
     /**
@@ -334,8 +337,7 @@ public class CameraService extends Service {
      * @return
      */
     private boolean isOpenBlank() {
-        int openBlankFlag = Settings.Global.getInt(mContext.getContentResolver(), "persist.cvte.auto.obstacle.avoidance", 0);
-        return openBlankFlag == 1;
+        return SystemPropertiesAdapter.get("persist.cvte.auto.obstacle.avoidance","0").equals("1");
     }
 
 
@@ -555,8 +557,16 @@ public class CameraService extends Service {
                     }
                     break;
                 case SHOW_BLANK_PATTERN:
+                    Log.d(TAG, "show_pattern  showBlankPattern-- ");
                     patternManager.showBlankPattern();
-                    isReadyBlank = true;
+                    patternManager.removeAllView();
+                    mUIHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.d(TAG, "show_pattern  isReadyBlank-- ");
+                            isReadyBlank = true;
+                        }
+                    }, TAKE_PICTURE_DELAY_MS);
                     break;
                 case SHOW_PATTERN1:
                     Log.d(TAG, "show_pattern--");
@@ -565,8 +575,13 @@ public class CameraService extends Service {
                 case SHOW_PATTERN2:
                     Log.d(TAG, "show_pattern2--");
                     patternManager.showPattern2();
-                    //延时500ms，以免下次拍照拍的还是上次显示的图片
-                    ImageUtil.KeystonePositiveFinishedToNegative = true;
+                    //延时1000ms，以免下次拍照拍的还是上次显示的图片
+                    mUIHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            ImageUtil.KeystonePositiveFinishedToNegative = true;
+                        }
+                    }, TAKE_PICTURE_DELAY_MS);
 //                    mTakePicCount = 0;
 //                    mUIHandler.sendEmptyMessageDelayed(KEYSTONE_POSITIVE_FINISHED_TO_NEGATIVE, 1000);
                     break;
