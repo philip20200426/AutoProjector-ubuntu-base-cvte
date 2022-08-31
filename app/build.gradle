@@ -41,7 +41,7 @@ android {
         targetSdkVersion 29
         versionCode genVersionCode()
         versionName genVersionName()
-        ndk{
+        ndk {
             // 打包生成的 APK 文件指挥包含 ARM 指令集的动态库
             abiFilters "armeabi-v7a"/*, "arm64-v8a"*/
         }
@@ -57,19 +57,26 @@ android {
             keyPassword "roward"
         }
     }
-
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
     buildTypes {
         release {
+            packagingOptions {
+                doNotStrip '**/*.so'  // controlled by OpenCV CMake scripts
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             // NOTICE: sign configs only using for debug mode!!! No Commit!!! No Push!!!
-            // signingConfig signingConfigs.android_app
+//            signingConfig signingConfigs.android_app
         }
-        debug{
+        debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-project.txt'
             // NOTICE: sign configs only using for debug mode!!! No Commit!!! No Push!!!
-            // signingConfig signingConfigs.android_app
+//             signingConfig signingConfigs.android_app
         }
     }
     compileOptions {
@@ -77,12 +84,13 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 }
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
 
 dependencies {
+    implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
     implementation 'androidx.appcompat:appcompat:1.1.0'
-//    implementation project(path: ':opencv')
-    implementation files('libs\\android.adapter-28-v1.2.jar')
-    implementation files('libs\\com.cvte.at.platform.jar')
-    implementation files('libs\\framework.jar')
-    implementation files('libs\\opencv-debug.aar')
 }

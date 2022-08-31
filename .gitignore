@@ -10,3 +10,5 @@ app/build/
 opencv/build/
 opencv/.cxx
 gen/
+/.cxx
+local.properties
