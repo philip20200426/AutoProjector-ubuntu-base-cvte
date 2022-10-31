@@ -24,8 +24,8 @@ def genVersionName() {
 /******** Jenkins 构建应用版本发布规范，请不要修改 **********/
 
 android {
-    compileSdkVersion 29
-    buildToolsVersion "29.0.2"
+    compileSdkVersion 30
+    buildToolsVersion "30.0.3"
 
     // Notice: ndk jenkins server version support!!!
     // if your local path do not support this version, you can modified here for debug build, No Commit!!! No Push!!!
@@ -33,12 +33,13 @@ android {
 
 
     lintOptions {
+        checkReleaseBuilds false
         abortOnError false
     }
     defaultConfig {
         applicationId "com.cvte.autoprojector"
         minSdkVersion 26
-        targetSdkVersion 29
+        targetSdkVersion 30
         versionCode genVersionCode()
         versionName genVersionName()
         ndk {
@@ -70,7 +71,7 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             // NOTICE: sign configs only using for debug mode!!! No Commit!!! No Push!!!
-//            signingConfig signingConfigs.android_app
+            signingConfig signingConfigs.android_app
         }
         debug {
             minifyEnabled false
@@ -93,4 +94,8 @@ repositories {
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
     implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+/*    implementation 'androidx.navigation:navigation-fragment:2.3.5'
+    implementation 'androidx.navigation:navigation-ui:2.3.5'*/
 }

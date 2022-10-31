@@ -1,5 +1,7 @@
 package com.cvte.autoprojector;
 
+import static com.cvte.autoprojector.util.Constants.PERSIST_BEGIN_TAKE_PHOTO;
+import static com.cvte.autoprojector.util.Constants.PERSIST_FINISH_TAKE_PHOTO;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -27,6 +29,7 @@ import android.view.Surface;
 import androidx.annotation.NonNull;
 
 
+import com.cvte.adapter.android.os.SystemPropertiesAdapter;
 import com.cvte.autoprojector.util.ImageUtil;
 import com.cvte.autoprojector.util.LogUtil;
 import com.cvte.autoprojector.util.MotorUtil;
@@ -75,6 +78,7 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
 
     private boolean mOpenDebug = true;
     protected OnCameraListener mCameraListener;
+    private static long pre_now=0;
 
     public Camera2Helper(OnCameraListener cameraListener) {
         mCameraListener = cameraListener;
@@ -416,6 +420,10 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
         }
     }
 
+    private boolean beginTakePhoto() {
+        boolean ret = SystemPropertiesAdapter.get(PERSIST_BEGIN_TAKE_PHOTO, "0").equals("1");
+        return ret;
+    }
 
     @Override
     public void onImageAvailable(ImageReader reader) {
@@ -425,26 +433,32 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
             return;
         }
         if (ImageFormat.YUV_420_888 == image.getFormat()) {
+            long now = SystemClock.uptimeMillis();
+            pre_now = now;
 
-            final byte[] yuv = ImageUtil.YUV_420_888toNV21(image);
-            // final byte[] yuv = ImageUtil.getDataFromImage(image, ImageUtil.COLOR_FormatNV21);
-            image.close();
-
-            mProcessHandler.removeCallbacksAndMessages(null);
-            mProcessHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    long now = SystemClock.uptimeMillis();
-                    // bitmap
-                    Bitmap bitmap = ImageUtil.nv21ToBitmap1(yuv, SIZE_WIDTH, SIZE_HEIGHT);
-                    long duration = SystemClock.uptimeMillis() - now;
-                    Log.d(TAG, "create bitmap duration = " + duration);
-                    if (mCameraListener != null) {
-                        mCameraListener.onCaptureComplete(bitmap, null, duration);
+            if (beginTakePhoto()) {
+                SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
+                final byte[] yuv = ImageUtil.YUV_420_888toNV21(image);
+                // final byte[] yuv = ImageUtil.getDataFromImage(image, ImageUtil.COLOR_FormatNV21);
+                mProcessHandler.removeCallbacksAndMessages(null);
+                mProcessHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        long now = SystemClock.uptimeMillis();
+                        //Log.d(TAG, "philip onImageAvailable  " + (now-pre_now));
+                        //pre_now = now;
+                        // bitmap
+                        Bitmap bitmap = ImageUtil.nv21ToBitmap1(yuv, SIZE_WIDTH, SIZE_HEIGHT);
+                        long duration = SystemClock.uptimeMillis() - now;
+                        //Log.d(TAG, "create bitmap duration = " + duration);
+                        if (mCameraListener != null) {
+                            mCameraListener.onCaptureComplete(bitmap, null, duration);
+                            SystemPropertiesAdapter.set(PERSIST_FINISH_TAKE_PHOTO, "1");
+                        }
                     }
-
-                }
-            });
+                });
+            }
+            image.close();
         }
     }
 

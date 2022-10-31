@@ -20,7 +20,9 @@ import android.os.Message;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
-
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
+import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -36,6 +38,9 @@ import com.cvte.autoprojector.util.SaveKeystoneUtil;
 import com.cvte.autoprojector.util.ShellCmd;
 
 import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
+import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -47,7 +52,7 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 
-public class CameraService extends Service {
+public class CameraService extends Service implements CvCameraViewListener2{
     private static final String TAG = CameraService.class.getName();
     private Camera2Helper mCamera2Helper;
     //    private ShowPattern mShowPattern;
@@ -60,6 +65,7 @@ public class CameraService extends Service {
     //(长按home键之后的操作：0表示只进行对焦,1表示只进行校正,2表示进行对焦和校正)
     private String OPERATION_LONG_PRESS_HOME = "";
     private Runnable mOverTimeRunnable;
+    private CameraBridgeViewBase mOpenCvCameraView;
     /**
      * 纯图像，逐次逼近算法
      */
@@ -125,6 +131,7 @@ public class CameraService extends Service {
     private static final int SHOW_BLANK_PATTERN = 10012;
 
     private static final int TAKE_PICTURE_DELAY_MS = 1000;
+    private static int mCount = 0;
 
     private PatternManager patternManager;
 
@@ -135,7 +142,26 @@ public class CameraService extends Service {
 
     private ImageManager imageManager;
 
+    private ViewGroup mWindowContainer;
+    private static long pre_now=0;
+
     public CameraService() {
+    }
+
+    @Override
+    public void onCameraViewStarted(int i, int i1) {
+        Log.d("philip", "onCameraViewStarted");
+    }
+
+    @Override
+    public void onCameraViewStopped() {
+
+    }
+
+    @Override
+    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        Log.d("philip", "--------------------------------");
+        return inputFrame.rgba();
     }
 
     private void startForeground() {
@@ -164,14 +190,12 @@ public class CameraService extends Service {
         @Override
         public void onManagerConnected(int status) {
             switch (status) {
-                case LoaderCallbackInterface.SUCCESS: {
+                case LoaderCallbackInterface.SUCCESS:
                     Log.i("HBK", "OpenCV loaded successfully");
-                }
-                break;
-                default: {
-                    super.onManagerConnected(status);
-                }
-                break;
+                    //mOpenCvCameraView.enableView();
+                    break;
+                default:
+                    break;
             }
         }
     };
@@ -185,6 +209,10 @@ public class CameraService extends Service {
         autoFocusHandler = new CameraServiceHandler(autoFocusThread.getLooper());
         mUIHandler = new CameraServiceHandler(Looper.getMainLooper());
 
+/*        mWindowContainer = (ViewGroup) LayoutInflater.from(this).inflate(R.layout.showpattern2, null);
+        mOpenCvCameraView = mWindowContainer.findViewById(R.id.opencv_surface_view);*/
+
+         //mOpenCvCameraView = new JavaCameraView(this, 1);
         if (!OpenCVLoader.initDebug()) {
             Log.d("HBK", "Internal OpenCV library not found. Using OpenCV Manager for initialization");
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback);
@@ -240,7 +268,8 @@ public class CameraService extends Service {
                 public void onCaptureComplete(Bitmap bitmap, File file, long duration) {
                     if (CVT_EN_AUTO_FOCUS_BORDER_CHECK) {
                         //保存图片到运存上的数据池
-                        if (beginTakePhoto()) {
+                        //if (beginTakePhoto())
+                        {
 //                            saveBitmapToDataPoolOnRAM(bitmap);
                             ImageBean imageBean = new ImageBean();
                             imageBean.setBitmap(bitmap);
@@ -248,12 +277,18 @@ public class CameraService extends Service {
                             imageBean.setBitmap(bitmap);
                             imageBean.setDuration(duration);
                             imageManager.addImage(imageBean);
+                            long now = SystemClock.uptimeMillis();
+                            Log.d("philip", "ladency : " + (now-pre_now) + " duration "+duration);
+                            pre_now = now;
                         }
-                    } else {
-                        // 计算拉普拉斯清晰度
+                    } /*else {
+                        long now = SystemClock.uptimeMillis();
+                        Log.d("philip", "ladency : " + (now-pre_now));
+                        pre_now = now;
+*//*                        // 计算拉普拉斯清晰度
 //                        toClarityByOpenCV(bitmap);
-                        toClarityByOpenCVWithNoGray(bitmap);
-                    }
+                        toClarityByOpenCVWithNoGray(bitmap);*//*
+                    }*/
                     //保存自动校正需要的图片到本地
                     saveAutoKeystonePhoto(bitmap);
                     if (isReadyBlank) {
@@ -531,9 +566,9 @@ public class CameraService extends Service {
                 case START_AUTO_FOCUS:
                     try {
                         startAutoFocusTime = SystemClock.uptimeMillis();
-                        Log.d(TAG, "start autoFocus");
+                        Log.d(TAG, "philip start autoFocus" + "a:" + CVT_EN_AUTO_FOCUS_APPROACH + "b" + CVT_EN_AUTO_FOCUS_BORDER_CHECK);
                         //超时退出
-                        mUIHandler.sendEmptyMessageDelayed(TIME_OUT_AUTO_FOCUS, 33_333);
+                        //mUIHandler.sendEmptyMessageDelayed(TIME_OUT_AUTO_FOCUS, 70000);
                         if (CVT_EN_AUTO_FOCUS_APPROACH) {
                             /*AutoFocusMethod② 纯图像，逐次逼近算法*/
 //                            openCamera();
@@ -541,7 +576,9 @@ public class CameraService extends Service {
                         } else if (CVT_EN_AUTO_FOCUS_BORDER_CHECK) {
                             /*AutoFocusMethod③ 纯步数和限位UEvent，逐次逼近算法*/
 //                            openCamera();
-                            AutoFocusMethod.autoFocusStepBorderCheckFunc(imageManager);
+                            //AutoFocusMethod.autoFocusStepBorderCheckFunc(imageManager);
+                            //AutoFocusMethod.autoFocusTest(imageManager);
+                            AutoFocusMethod.autoFocusLoop(imageManager);
                         } else {
                             /*AutoFocusMethod① 纯图像，时间遍历算法*/
                             autoFocusTraversingMethod();
@@ -551,7 +588,7 @@ public class CameraService extends Service {
                         // 5. 保存自动校正照片到指定路径
 //                        mTakePicCount = 0;
                         //发送梯形矫正
-                        mUIHandler.sendEmptyMessage(AUTO_FOCUS_FINISHED_TO_KEYSTONE);
+                        mUIHandler.sendEmptyMessage(FINISH_AUTO_FOCUS);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

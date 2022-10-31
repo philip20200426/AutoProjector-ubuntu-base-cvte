@@ -1,6 +1,7 @@
 package com.cvte.autoprojector;
 
 import static com.cvte.autoprojector.util.Constants.PERSIST_BEGIN_TAKE_PHOTO;
+import static com.cvte.autoprojector.util.Constants.PERSIST_FINISH_TAKE_PHOTO;
 
 import android.graphics.Bitmap;
 import android.media.Image;
@@ -24,6 +25,9 @@ import org.opencv.imgproc.Imgproc;
 import static org.opencv.core.Core.max;
 import static org.opencv.core.Core.mean;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,6 +40,7 @@ public class AutoFocusMethod {
      * 因为现在前三张图片概率性出现计算清晰度异常
      */
     private static final int FIRST_BITMAP_INDEX = 3;
+    private static List<LocationBean> locationList = new ArrayList<>();
 
     /*****************************************
      * function：AutoFocusMethod② 纯图像，逐次逼近算法
@@ -100,6 +105,154 @@ public class AutoFocusMethod {
 
     private static long beginTime;
 
+
+    /**
+     * 查找清晰度最大的值
+     */
+    public static int calculateLocationPoolLaplaceMax() {
+        if (locationList.isEmpty()) {
+            return -1;
+        }
+        LocationBean maxLapsLocation = locationList.get(0);
+        for (int i = 0; i < locationList.size(); i++) {
+            LocationBean locationBean = locationList.get(i);
+            if (locationBean != null) {
+                if (locationBean.getLaplacian() > maxLapsLocation.getLaplacian()) {
+                    maxLapsLocation = locationBean;
+                }
+            }
+        }
+        Log.d("philip", "LocationPool MAX value:" + maxLapsLocation.getLaplacian() + " index:" + maxLapsLocation.getIndex());
+        return maxLapsLocation.getIndex();
+    }
+
+    public static void autoFocusLoop(ImageManager imageManager) {
+        Log.d("philip", "autoFocusTest start," + " autoFocusState: " + AutoFocusUtil.autoFocusState);
+        SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
+        MotorUtil.setMotorForewordEnd();
+
+        long now = SystemClock.uptimeMillis();
+        int num = 7;
+        int nextSumSteps = 2300;
+        int intervalSteps = 0;
+        int motorStopMs = 50;
+        int multiImageMs = 120;
+        int stepsThreshold = 120;
+        int i = 0;
+        Log.d("philip", " motorStopMs : " + motorStopMs + " multiImageMs : " + multiImageMs);
+        while (true) {
+            intervalSteps = nextSumSteps/num;
+/*            if (nextSumSteps < 400) {
+                multiImageMs = 300;
+            }*/
+            Log.d("philip", " sumSteps : " + nextSumSteps + " intervalSteps : " + intervalSteps + "  START START START");
+            while (i < num+1) {
+                if (MotorUtil.mMotorState == MotorUtil.MOTOR_BORDER_FINISHED) {
+                    Log.d("philip","i : " + i + "  MOTOR_BORDER_FINISHED , intervalSteps : " + intervalSteps + "  !!!!!!!!!!");
+                    MotorUtil.mMotorState = MotorUtil.MOTOR_STATE_NONE;
+                    try {
+                        Thread.sleep(motorStopMs);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "1");
+                    SystemPropertiesAdapter.set(PERSIST_FINISH_TAKE_PHOTO, "0");
+/*                    try {
+                        Thread.sleep(multiImageMs);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }*/
+                    while (SystemPropertiesAdapter.get(PERSIST_FINISH_TAKE_PHOTO, "0").equals("0"));
+
+                    LocationBean locationBean = new LocationBean();
+                    locationBean.setLaplacian(imageManager.calculateMultiPhotoClarity());
+                    locationBean.setIndex(i);
+                    locationBean.setSteps(intervalSteps);
+                    locationList.add(locationBean);
+                    imageManager.clear();
+
+                    if (i == 0) {
+                        //MotorUtil.setMotorReversal();
+                        MotorUtil.setMotorTurnRound();
+                        MotorUtil.setMotorRunInOrderStep(intervalSteps);
+                    } else {
+                        Log.d("philip"," MOTOR_BORDER_FINISHED , i !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   " + i);
+                    }
+                    i++;
+                }
+                if (MotorUtil.mMotorState == MotorUtil.MOTOR_NO_BORDER_FINISHED) {
+                    MotorUtil.mMotorState = MotorUtil.MOTOR_STATE_NONE;
+                    Log.d("philip","i : " + i + "  MOTOR_NO_BORDER_FINISHED , intervalSteps : " + intervalSteps + "  >>>>>>>>>>");
+                    try {
+                        Thread.sleep(motorStopMs);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "1");
+                    SystemPropertiesAdapter.set(PERSIST_FINISH_TAKE_PHOTO, "0");
+/*                    try {
+                        Thread.sleep(multiImageMs);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }*/
+                    while (SystemPropertiesAdapter.get(PERSIST_FINISH_TAKE_PHOTO, "0").equals("0"));
+
+                    LocationBean locationBean = new LocationBean();
+                    locationBean.setLaplacian(imageManager.calculateMultiPhotoClarity());
+                    locationBean.setIndex(i);
+                    locationBean.setSteps(intervalSteps);
+                    locationList.add(locationBean);
+                    imageManager.clear();
+
+                    if (i < num) {
+                        MotorUtil.setMotorRunInOrderStep(intervalSteps);
+                    }
+                    i++;
+                }
+            }
+            for (int j = 0; j < locationList.size(); j++) {
+                Log.d("philip", locationList.get(j).getIndex() + " current position lapulasi " + locationList.get(j).getLaplacian());
+            }
+            if ( i > 0) {
+                i = 0;
+                nextSumSteps = intervalSteps*2;
+                int maxIndex = calculateLocationPoolLaplaceMax();
+
+                MotorUtil.setMotorTurnRound();
+                int nextSteps = 0;
+                int nextIndex = maxIndex + 1;
+                int xishu = 1;
+                if (maxIndex < num) {
+                    if (nextSumSteps < stepsThreshold) {
+                        nextIndex = maxIndex;
+                    }
+                } else {
+                    nextIndex = maxIndex;
+                    xishu = 0;
+                }
+                //nextSteps = (num-nextIndex)*intervalSteps + xishu*intervalSteps/2;
+                nextSteps = (num-nextIndex)*intervalSteps;
+                MotorUtil.setMotorRunInOrderStep(nextSteps);
+                Log.d("philip", "Number: " + num + " maxIndex: " + maxIndex +
+                        " Go to index: " + nextIndex + " nextSteps: " + nextSteps);
+                if (nextSumSteps < stepsThreshold) {
+                    Log.d("philip", "Autofocus Exit END END END");
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                }
+                num = num -2;
+                if (num < 3) {
+                    num = 3;
+                }
+
+                locationList.clear();
+            }
+        }
+    }
     /*****************************************
      * function：AutoFocusMethod③ 纯步数和限位UEvent，逐次逼近算法
      * @return null
@@ -407,6 +560,4 @@ public class AutoFocusMethod {
         Log.d("HBK-BC", "getBitmapPoolState:" + ret);
         return ret;
     }
-
-
 }

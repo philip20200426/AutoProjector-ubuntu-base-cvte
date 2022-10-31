@@ -1,15 +1,18 @@
 package com.cvte.autoprojector.util;
 
+import static org.opencv.core.Core.convertScaleAbs;
 import static org.opencv.core.Core.mean;
 
 import android.graphics.Bitmap;
 import android.util.Log;
 
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Range;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
@@ -32,8 +35,25 @@ public class OpenCVUtils {
         Mat resizeMat = new Mat();
         Imgproc.resize(mat, resizeMat, new org.opencv.core.Size(128, 128));
         Mat lapMat = new Mat();
-        Imgproc.Laplacian(resizeMat, lapMat, ddepth, kernel_size);
+        Mat gauMat = new Mat();
+
+//==================生成卷积核======================
+        Mat kx = new Mat(3, 3, -1);
+        //float[] robert_x = new float[]{0, 0,0,-1,0,-1,5,-1,0,-1,0};
+        //kx.put(0, 0, robert_x);
+//===================================================
+        //Imgproc.filter2D(resizeMat, gauMat, ddepth, kx);//进行卷积操作
+
+        //Imgproc.GaussianBlur(resizeMat, gauMat, new Size(7.0, 7.0), 0.0, 0);
+        Imgproc.blur(resizeMat, gauMat, new Size(7.0, 7.0));
+        //Imgproc.medianBlur(resizeMat, gauMat, 9);
+        //Imgproc.filter2D();
+        //Core.convertScaleAbs();   //Mat转换成8位
+
+        Imgproc.Laplacian(gauMat, lapMat, ddepth, kernel_size);
+        //Core.convertScaleAbs(lapMat, lapMat);
         Scalar mean = mean(lapMat);
+
         return mean.val[0];
     }
 

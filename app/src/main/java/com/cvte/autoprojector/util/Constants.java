@@ -29,4 +29,5 @@ public class Constants {
      * </ul>
      */
     public static final String PERSIST_BEGIN_TAKE_PHOTO = "persist.begin.take.photo";
+    public static final String PERSIST_FINISH_TAKE_PHOTO = "persist.finish.take.photo";
 }

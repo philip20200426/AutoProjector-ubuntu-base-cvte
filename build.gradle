@@ -15,9 +15,10 @@ buildscript {
 allprojects {
     repositories {
         // ALIYUN repositories: make dependencies downlaoding faster.
-        maven { url 'https://maven.aliyun.com/repository/public/' }
-        maven{ url 'https://maven.aliyun.com/repository/google'}
-
+/*        maven { url 'https://maven.aliyun.com/repository/public/' }
+        maven{ url 'https://maven.aliyun.com/repository/google'}*/
+        maven {url 'https://dl.google.com/dl/android/maven2/'}
+        maven {url 'https://www.jitpack.io'}
         google()
         jcenter()
     }

@@ -26,6 +26,7 @@ public class AutoFocusUtil {
      * 下降趋势
      */
     public static final int AUTO_FOCUS_TURN_ROUND = 3;
+    public static final int AUTO_FOCUS_STEPS_FINISHED = 4;
     /**
      * 出现波峰
      */

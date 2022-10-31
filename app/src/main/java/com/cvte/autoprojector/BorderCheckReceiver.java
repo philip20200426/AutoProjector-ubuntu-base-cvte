@@ -73,9 +73,9 @@ public class BorderCheckReceiver {
             String state = event.get("MOTOR_STATE");
             Log.d("HBK-U", "onUEvent: " + state);
             //异常超时，结束兼听，不再更改状态机状态
-            if (SystemPropertiesAdapter.get(PERSIST_BEGIN_TAKE_PHOTO, "0").equals("999")) {
+/*            if (SystemPropertiesAdapter.get(PERSIST_BEGIN_TAKE_PHOTO, "0").equals("999")) {
                 return;
-            }
+            }*/
 
             String[] borderUEvent = state.split("_");
             if (borderUEvent[STEP_BORDER_SUBSCRIPT] == null || borderUEvent[STEP_NUM_SUBSCRIPT] == null) {
@@ -87,8 +87,16 @@ public class BorderCheckReceiver {
             switch (borderType) {
                 case EVENT_NO_BORDER_FINISHED: {
                     mHandler.removeCallbacksAndMessages(null);
-                    Log.d("HBK-U", "Receive EVENT_NO_BORDER_FINISHED");
-                    SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "2");
+
+                    //SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "2");
+                    MotorUtil.mMotorState = MotorUtil.MOTOR_NO_BORDER_FINISHED;
+                    String[] steppingdDirection = MotorUtil.steppingdDirectionValue.split(" ");
+                    if (steppingdDirection[0].equals("5")) {
+                        MotorUtil.mTotalStepsBack = MotorUtil.mTotalStepsBack - borderStep;
+                    } else if (steppingdDirection[0].equals("2")){
+                        MotorUtil.mTotalStepsBack = MotorUtil.mTotalStepsBack + borderStep;
+                    }
+                    Log.d("HBK-U", "Receive EVENT_NO_BORDER_FINISHED" + " mTotalStepsBack : " + MotorUtil.mTotalStepsBack);
                     break;
                 }
                 case EVENT_INNER_BORDER: {
@@ -111,14 +119,16 @@ public class BorderCheckReceiver {
                     mHandler.removeCallbacksAndMessages(null);
                     if (MotorUtil.IS_TURN_ROUND) {
                         MotorUtil.turnRoundStep -= borderStep;
-                        if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
+                        MotorUtil.mMotorState = MotorUtil.MOTOR_BORDER_FINISHED;
+                        //AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_TURN_ROUND;
+/*                        if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
                             Log.d("HBK-U", "电机走了" + MotorUtil.turnRoundStep + "步触发限位,电机回退" + borderStep + "步，先计算拉普拉斯");
                             SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "2");
                         } else {
 
                             SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
                             AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_TURN_ROUND;
-                        }
+                        }*/
                         MotorUtil.IS_TURN_ROUND = false;
                     }
                 }
@@ -132,15 +142,16 @@ public class BorderCheckReceiver {
     };
 
     private final Runnable timeOutRunnable = () -> {
-        Log.d("HBK-U", "等待状态超时，启动超时机制");
+        Log.d("HBK-U", "电机回转超时，启动超时机制");
         if (MotorUtil.IS_TURN_ROUND) {
-            if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
+            AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_TURN_ROUND;
+/*            if (MotorUtil.turnRoundStep > MotorUtil.EFFECTIVE_STEPS) {
                 Log.d("HBK-U", "触发限位大于100，先计算laps:" + MotorUtil.turnRoundStep);
                 SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "2");
             } else {
                 SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
                 AutoFocusUtil.autoFocusState = AutoFocusUtil.AUTO_FOCUS_TURN_ROUND;
-            }
+            }*/
             MotorUtil.IS_TURN_ROUND = false;
         }
     };

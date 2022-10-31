@@ -14,6 +14,9 @@ public class PatternManager {
     ViewGroup mWindowContainer2;
     ViewGroup mBlankContainer;
 
+    public ViewGroup GetPattern2() {
+        return mWindowContainer2;
+    }
     public PatternManager(Context context) {
         mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         mWindowContainer = (ViewGroup) LayoutInflater.from(context).inflate(R.layout.showpattern, null);
