@@ -11,6 +11,15 @@ public class LocationBean {
     private int index;
     private double laplacian;
     private int steps;
+    private int mImageCount = 1;
+
+    public void setImageCount(int mImageCount) {
+        this.mImageCount = mImageCount;
+    }
+
+    public int getImageCount() {
+        return mImageCount;
+    }
 
     public int getIndex() {
         return index;

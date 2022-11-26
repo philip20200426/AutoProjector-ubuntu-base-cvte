@@ -2,6 +2,7 @@ package com.cvte.autoprojector;
 
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static com.cvte.autoprojector.util.Constants.PERSIST_BEGIN_TAKE_PHOTO;
+import static com.cvte.autoprojector.util.Constants.PERSIST_FINISH_TAKE_PHOTO;
 import static org.opencv.core.Core.mean;
 
 import android.app.Notification;
@@ -29,6 +30,7 @@ import androidx.annotation.Nullable;
 import com.cvte.adapter.android.os.SystemPropertiesAdapter;
 import com.cvte.at.platform.AtShellCmd;
 import com.cvte.autoprojector.util.AutoFocusUtil;
+import com.cvte.autoprojector.util.FileUtil;
 import com.cvte.autoprojector.util.ImageUtil;
 import com.cvte.autoprojector.util.LogUtil;
 import com.cvte.autoprojector.util.MotorUtil;
@@ -55,6 +57,7 @@ import java.io.File;
 public class CameraService extends Service implements CvCameraViewListener2{
     private static final String TAG = CameraService.class.getName();
     private Camera2Helper mCamera2Helper;
+    private MotorHelper mMotorHelper;
     //    private ShowPattern mShowPattern;
     private long mLastTime = -1L;
 
@@ -265,21 +268,37 @@ public class CameraService extends Service implements CvCameraViewListener2{
                 }
 
                 @Override
-                public void onCaptureComplete(Bitmap bitmap, File file, long duration) {
+                public void onCaptureComplete(Bitmap bitmap, File file, long duration, long frameId) {
                     if (CVT_EN_AUTO_FOCUS_BORDER_CHECK) {
                         //保存图片到运存上的数据池
                         //if (beginTakePhoto())
                         {
 //                            saveBitmapToDataPoolOnRAM(bitmap);
                             ImageBean imageBean = new ImageBean();
-                            imageBean.setBitmap(bitmap);
+                            imageBean.setFrameId(frameId);
                             imageBean.setIndex(imageManager.getImageSize());
                             imageBean.setBitmap(bitmap);
                             imageBean.setDuration(duration);
+                            imageBean.setLaplacian(imageManager.calculateOnePhotoClarity(bitmap));
                             imageManager.addImage(imageBean);
-                            long now = SystemClock.uptimeMillis();
-                            Log.d("philip", "ladency : " + (now-pre_now) + " duration "+duration);
-                            pre_now = now;
+                            //ImageUtil.saveBitmap(String.valueOf(imageManager.getImageSize()), bitmap);
+                            Log.d("philip", "FrameID :  X "+frameId);
+                            imageManager.decreaseImageCount();
+  /*                          mCount++;
+                            if (mCount == imageManager.getmLocation()) {
+                                imageManager.calculateBitmapPoolLaplaceMax();
+                                for (int j = 0; j < imageManager.getImageSize(); j++) {
+                                    Log.d("philip", "j "+j+" current position lapulasi " + imageManager.getImageList().get(j).getLaplacian() +
+                                            " size " + imageManager.getImageSize());
+                                }
+                                FileUtil.exportCsv("/data/test.csv", imageManager);
+                                SystemPropertiesAdapter.set(PERSIST_FINISH_TAKE_PHOTO, "1");
+                                //FileUtil.readCSV("/data/test.csv");
+                                mCount = 0;
+                            }*/
+/*                            long now = SystemClock.uptimeMillis();
+                            Log.d("philip", "ladency : " + (now-pre_now) + " duration : "+ duration + " mCount : " + mCount);
+                            pre_now = now;*/
                         }
                     } /*else {
                         long now = SystemClock.uptimeMillis();
@@ -406,7 +425,7 @@ public class CameraService extends Service implements CvCameraViewListener2{
         //init Border Check
         if (CVT_EN_AUTO_FOCUS_BORDER_CHECK) {
             Log.d("HBK-U", "initKeystone");
-            BorderCheckReceiver.getInstance().startObserving();
+            //BorderCheckReceiver.getInstance().startObserving();
         }
         closeAsuSpeech();
     }
@@ -432,7 +451,7 @@ public class CameraService extends Service implements CvCameraViewListener2{
         stopForeground();
         //init Border Check
         if (CVT_EN_AUTO_FOCUS_BORDER_CHECK) {
-            BorderCheckReceiver.getInstance().stopObserving();
+            //BorderCheckReceiver.getInstance().stopObserving();
         }
         if (mUIHandler != null) {
             mUIHandler.removeCallbacksAndMessages(null);
@@ -578,7 +597,9 @@ public class CameraService extends Service implements CvCameraViewListener2{
 //                            openCamera();
                             //AutoFocusMethod.autoFocusStepBorderCheckFunc(imageManager);
                             //AutoFocusMethod.autoFocusTest(imageManager);
-                            AutoFocusMethod.autoFocusLoop(imageManager);
+                            //AutoFocusMethod.fineSearchAF(imageManager);
+                            //AutoFocusMethod.dataCaptureAF(imageManager);
+                            AutoFocusManager.climbingMethodAF(imageManager);
                         } else {
                             /*AutoFocusMethod① 纯图像，时间遍历算法*/
                             autoFocusTraversingMethod();

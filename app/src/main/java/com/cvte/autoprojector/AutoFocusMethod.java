@@ -35,6 +35,7 @@ import java.util.concurrent.Executors;
 public class AutoFocusMethod {
     private static ExecutorService executor;
     private boolean isFirstAutoFocus = false;
+    private MotorHelper motorHelper;
     /**
      * 开始计算的第一张图片索引，正常情况0，
      * 因为现在前三张图片概率性出现计算清晰度异常
@@ -126,29 +127,89 @@ public class AutoFocusMethod {
         return maxLapsLocation.getIndex();
     }
 
+    public static void dataCaptureAF(ImageManager imageManager) {
+        Log.d("philip", "autoFocusTest start," + " autoFocusState: " + AutoFocusUtil.autoFocusState);
+        SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
+        MotorUtil.setMotorForewordEnd();
+
+        long now = SystemClock.uptimeMillis();
+        int num = 26;
+        int nextSumSteps = 2340;
+        int intervalSteps = 0;
+        int motorStopMs = 200;
+        int multiImageMs = 1;
+        int stepsThreshold = 120;
+        int i = 0;
+        intervalSteps = nextSumSteps / num;
+        imageManager.setmLocation(num + 1);
+        SystemPropertiesAdapter.set(PERSIST_FINISH_TAKE_PHOTO, "0");
+        Log.d("philip", " motorStopMs : " + motorStopMs + " multiImageMs : " + multiImageMs);
+        Log.d("philip", " sumSteps : " + nextSumSteps + " intervalSteps : " + intervalSteps + "  START START START");
+        while (i < num + 1) {
+            if (MotorUtil.mMotorState == MotorUtil.MOTOR_BORDER_FINISHED) {
+                Log.d("philip", "i : " + i + "  MOTOR_BORDER_FINISHED , intervalSteps : " + intervalSteps + "  !!!!!!!!!!");
+                MotorUtil.mMotorState = MotorUtil.MOTOR_STATE_NONE;
+                try {
+                    Thread.sleep(motorStopMs);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "1");
+                while (SystemPropertiesAdapter.get(PERSIST_BEGIN_TAKE_PHOTO, "0").equals("1")) ;
+
+                if (i == 0) {
+                    //MotorUtil.setMotorReversal();
+                    MotorUtil.setMotorTurnRound();
+                    MotorUtil.setMotorRunInOrderStep(intervalSteps);
+                } else {
+                    Log.d("philip", " MOTOR_BORDER_FINISHED , i !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   " + i);
+                }
+                i++;
+            }
+            if (MotorUtil.mMotorState == MotorUtil.MOTOR_NO_BORDER_FINISHED) {
+                MotorUtil.mMotorState = MotorUtil.MOTOR_STATE_NONE;
+                Log.d("philip", "i : " + i + "  MOTOR_NO_BORDER_FINISHED , intervalSteps : " + intervalSteps + "  >>>>>>>>>>");
+                try {
+                    Thread.sleep(motorStopMs);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "1");
+                while (SystemPropertiesAdapter.get(PERSIST_BEGIN_TAKE_PHOTO, "0").equals("1")) ;
+
+                if (i < num) {
+                    MotorUtil.setMotorRunInOrderStep(intervalSteps);
+                }
+                i++;
+            }
+        }
+    }
+
     public static void autoFocusLoop(ImageManager imageManager) {
         Log.d("philip", "autoFocusTest start," + " autoFocusState: " + AutoFocusUtil.autoFocusState);
         SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
         MotorUtil.setMotorForewordEnd();
 
         long now = SystemClock.uptimeMillis();
-        int num = 7;
+        int num = 5;
         int nextSumSteps = 2300;
         int intervalSteps = 0;
-        int motorStopMs = 50;
-        int multiImageMs = 120;
+        int motorStopMs = 1;
+        int multiImageMs = 1;
         int stepsThreshold = 120;
         int i = 0;
         Log.d("philip", " motorStopMs : " + motorStopMs + " multiImageMs : " + multiImageMs);
         while (true) {
-            intervalSteps = nextSumSteps/num;
+            intervalSteps = nextSumSteps / num;
+            imageManager.setmLocation(num + 1);
+            SystemPropertiesAdapter.set(PERSIST_FINISH_TAKE_PHOTO, "0");
 /*            if (nextSumSteps < 400) {
                 multiImageMs = 300;
             }*/
             Log.d("philip", " sumSteps : " + nextSumSteps + " intervalSteps : " + intervalSteps + "  START START START");
-            while (i < num+1) {
+            while (i < num + 1) {
                 if (MotorUtil.mMotorState == MotorUtil.MOTOR_BORDER_FINISHED) {
-                    Log.d("philip","i : " + i + "  MOTOR_BORDER_FINISHED , intervalSteps : " + intervalSteps + "  !!!!!!!!!!");
+                    Log.d("philip", "i : " + i + "  MOTOR_BORDER_FINISHED , intervalSteps : " + intervalSteps + "  !!!!!!!!!!");
                     MotorUtil.mMotorState = MotorUtil.MOTOR_STATE_NONE;
                     try {
                         Thread.sleep(motorStopMs);
@@ -156,53 +217,27 @@ public class AutoFocusMethod {
                         e.printStackTrace();
                     }
                     SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "1");
-                    SystemPropertiesAdapter.set(PERSIST_FINISH_TAKE_PHOTO, "0");
-/*                    try {
-                        Thread.sleep(multiImageMs);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }*/
-                    while (SystemPropertiesAdapter.get(PERSIST_FINISH_TAKE_PHOTO, "0").equals("0"));
-
-                    LocationBean locationBean = new LocationBean();
-                    locationBean.setLaplacian(imageManager.calculateMultiPhotoClarity());
-                    locationBean.setIndex(i);
-                    locationBean.setSteps(intervalSteps);
-                    locationList.add(locationBean);
-                    imageManager.clear();
+                    while (SystemPropertiesAdapter.get(PERSIST_BEGIN_TAKE_PHOTO, "0").equals("1")) ;
 
                     if (i == 0) {
                         //MotorUtil.setMotorReversal();
                         MotorUtil.setMotorTurnRound();
                         MotorUtil.setMotorRunInOrderStep(intervalSteps);
                     } else {
-                        Log.d("philip"," MOTOR_BORDER_FINISHED , i !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   " + i);
+                        Log.d("philip", " MOTOR_BORDER_FINISHED , i !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   " + i);
                     }
                     i++;
                 }
                 if (MotorUtil.mMotorState == MotorUtil.MOTOR_NO_BORDER_FINISHED) {
                     MotorUtil.mMotorState = MotorUtil.MOTOR_STATE_NONE;
-                    Log.d("philip","i : " + i + "  MOTOR_NO_BORDER_FINISHED , intervalSteps : " + intervalSteps + "  >>>>>>>>>>");
+                    Log.d("philip", "i : " + i + "  MOTOR_NO_BORDER_FINISHED , intervalSteps : " + intervalSteps + "  >>>>>>>>>>");
                     try {
                         Thread.sleep(motorStopMs);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                     SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "1");
-                    SystemPropertiesAdapter.set(PERSIST_FINISH_TAKE_PHOTO, "0");
-/*                    try {
-                        Thread.sleep(multiImageMs);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }*/
-                    while (SystemPropertiesAdapter.get(PERSIST_FINISH_TAKE_PHOTO, "0").equals("0"));
-
-                    LocationBean locationBean = new LocationBean();
-                    locationBean.setLaplacian(imageManager.calculateMultiPhotoClarity());
-                    locationBean.setIndex(i);
-                    locationBean.setSteps(intervalSteps);
-                    locationList.add(locationBean);
-                    imageManager.clear();
+                    while (SystemPropertiesAdapter.get(PERSIST_BEGIN_TAKE_PHOTO, "0").equals("1")) ;
 
                     if (i < num) {
                         MotorUtil.setMotorRunInOrderStep(intervalSteps);
@@ -210,13 +245,16 @@ public class AutoFocusMethod {
                     i++;
                 }
             }
-            for (int j = 0; j < locationList.size(); j++) {
-                Log.d("philip", locationList.get(j).getIndex() + " current position lapulasi " + locationList.get(j).getLaplacian());
-            }
-            if ( i > 0) {
-                i = 0;
-                nextSumSteps = intervalSteps*2;
-                int maxIndex = calculateLocationPoolLaplaceMax();
+            Log.d("philip", "-------------------------------------- E");
+            while (SystemPropertiesAdapter.get(PERSIST_FINISH_TAKE_PHOTO, "0").equals("0")) ;
+            Log.d("philip", "-------------------------------------- X");
+
+            if (i > 0) {
+
+                nextSumSteps = intervalSteps * 2;
+                //int maxIndex = calculateLocationPoolLaplaceMax();
+                int maxIndex = imageManager.getMaxLapsIndex();
+                imageManager.clear();
 
                 MotorUtil.setMotorTurnRound();
                 int nextSteps = 0;
@@ -231,7 +269,7 @@ public class AutoFocusMethod {
                     xishu = 0;
                 }
                 //nextSteps = (num-nextIndex)*intervalSteps + xishu*intervalSteps/2;
-                nextSteps = (num-nextIndex)*intervalSteps;
+                nextSteps = (num - nextIndex) * intervalSteps;
                 MotorUtil.setMotorRunInOrderStep(nextSteps);
                 Log.d("philip", "Number: " + num + " maxIndex: " + maxIndex +
                         " Go to index: " + nextIndex + " nextSteps: " + nextSteps);
@@ -244,15 +282,119 @@ public class AutoFocusMethod {
                     }
                     break;
                 }
-                num = num -2;
+/*                num = num -2;
                 if (num < 3) {
                     num = 3;
-                }
-
-                locationList.clear();
+                }*/
+                i = 0;
             }
         }
     }
+
+    public static void fineSearchAF(ImageManager imageManager) {
+        Log.d("philip", "autoFocusTest start," + " autoFocusState: " + AutoFocusUtil.autoFocusState);
+        SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
+        //MotorUtil.setMotorForewordEnd();
+        MotorUtil.setMotorTurnRound();
+        MotorUtil.setMotorRunInOrderStep(1);
+
+        long now = SystemClock.uptimeMillis();
+        int num = 1;
+        int nextSumSteps = 500;
+        int intervalSteps = 0;
+        int motorStopMs = 1;
+        int multiImageMs = 1;
+        int stepsThreshold = 50;
+        int i = 0;
+        Log.d("philip", " motorStopMs : " + motorStopMs + " multiImageMs : " + multiImageMs);
+        while (true) {
+            intervalSteps = nextSumSteps / num;
+            imageManager.setmLocation(num + 1);
+            SystemPropertiesAdapter.set(PERSIST_FINISH_TAKE_PHOTO, "0");
+
+            Log.d("philip", " sumSteps : " + nextSumSteps + " intervalSteps : " + intervalSteps + "  START START START");
+            while (i < num + 1) {
+                if (MotorUtil.mMotorState == MotorUtil.MOTOR_BORDER_FINISHED) {
+                    Log.d("philip", "i : " + i + "  MOTOR_BORDER_FINISHED , intervalSteps : " + intervalSteps + "  !!!!!!!!!!");
+                    MotorUtil.mMotorState = MotorUtil.MOTOR_STATE_NONE;
+/*                    try {
+                        Thread.sleep(motorStopMs);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }*/
+                    SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "1");
+                    while (SystemPropertiesAdapter.get(PERSIST_BEGIN_TAKE_PHOTO, "0").equals("1")) ;
+
+
+                    if (i == 0) {
+                        //MotorUtil.setMotorReversal();
+                        MotorUtil.setMotorTurnRound();
+                        MotorUtil.setMotorRunInOrderStep(intervalSteps);
+                    } else {
+                        Log.d("philip", " MOTOR_BORDER_FINISHED , i !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   " + i);
+                    }
+                    i++;
+                }
+                if (MotorUtil.mMotorState == MotorUtil.MOTOR_NO_BORDER_FINISHED) {
+                    MotorUtil.mMotorState = MotorUtil.MOTOR_STATE_NONE;
+                    Log.d("philip", "i : " + i + "  MOTOR_NO_BORDER_FINISHED , intervalSteps : " + intervalSteps + "  >>>>>>>>>>");
+/*                    try {
+                        Thread.sleep(motorStopMs);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }*/
+                    SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "1");
+                    while (SystemPropertiesAdapter.get(PERSIST_BEGIN_TAKE_PHOTO, "0").equals("1")) ;
+
+                    if (i < num) {
+                        MotorUtil.setMotorRunInOrderStep(intervalSteps);
+                    }
+                    i++;
+                }
+            }
+            Log.d("philip", "-------------------------------------- E");
+            while (SystemPropertiesAdapter.get(PERSIST_FINISH_TAKE_PHOTO, "0").equals("0")) ;
+            Log.d("philip", "-------------------------------------- X");
+
+            if (i > 0) {
+
+                nextSumSteps = intervalSteps * 2;
+                //int maxIndex = calculateLocationPoolLaplaceMax();
+                int maxIndex = imageManager.getMaxLapsIndex();
+                imageManager.clear();
+                int nextSteps = 0;
+                if (i == 2) {
+                    switch (maxIndex) {
+                        case 0://back
+                            MotorUtil.setMotorTurnRound();
+                            nextSumSteps = intervalSteps / 2;
+                            Log.d("roise", "move back " + " nextSumSteps " + nextSumSteps);
+/*                            if (nextSumSteps < stepsThreshold) {
+                                nextSteps = intervalSteps;
+                            }*/
+                            break;
+                        case 1: //forward
+                            nextSumSteps = intervalSteps;
+                            Log.d("roise", "move forward " + " nextSumSteps " + nextSumSteps);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                i = 0;
+                if (nextSumSteps < stepsThreshold) {
+                    MotorUtil.setMotorRunInOrderStep(intervalSteps);
+                    Log.d("philip", "Autofocus Exit END END END, nextSumSteps : " + nextSumSteps +
+                            " TotalSteps : " + MotorUtil.mTotalSteps);
+                    break;
+                } else {
+                    MotorUtil.setMotorRunInOrderStep(nextSteps);
+                }
+            }
+        }
+    }
+
     /*****************************************
      * function：AutoFocusMethod③ 纯步数和限位UEvent，逐次逼近算法
      * @return null

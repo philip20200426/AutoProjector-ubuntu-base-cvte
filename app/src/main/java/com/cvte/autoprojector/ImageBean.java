@@ -1,6 +1,7 @@
 package com.cvte.autoprojector;
 
 import android.graphics.Bitmap;
+import android.util.Log;
 
 import java.util.Objects;
 
@@ -12,6 +13,15 @@ public class ImageBean {
     private Bitmap bitmap;
     private double laplacian;
     private long duration;
+    private long mFrameId;
+
+    public void setFrameId(long mFrameId) {
+        this.mFrameId = mFrameId;
+    }
+
+    public long getFrameId() {
+        return mFrameId;
+    }
 
     public int getIndex() {
         return index;
@@ -35,6 +45,7 @@ public class ImageBean {
 
     public void setLaplacian(double laplacian) {
         this.laplacian = laplacian;
+        Log.d("philip", "FrameId : " + mFrameId + " laplace : " + laplacian);
     }
 
     public long getDuration() {

@@ -116,7 +116,7 @@ public class MotorUtil {
                 PLUS_VALUE = PLUS_VALUE_YS;
                 REDUCE_VALUE = REDUCE_VALUE_YS;
                 MOTOR_STOP = MOTOR_STOP_YS;
-                steppingdDirectionValue = MOTOR_STOP;
+                steppingdDirectionValue = PLUS_VALUE_YS;
                 routeTotalTime = 2167;//ms
                 TraversalGapTime = 500;//ms
             }

@@ -9,9 +9,17 @@ import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.media.Image;
+import android.nfc.Tag;
+import android.os.SystemClock;
 import android.util.Log;
 
 import com.cvte.adapter.android.os.SystemPropertiesAdapter;
+import com.cvte.autoprojector.ImageManager;
+
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+import org.opencv.core.Range;
+import org.opencv.imgcodecs.Imgcodecs;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -20,6 +28,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 /**
@@ -33,8 +43,8 @@ import java.nio.ReadOnlyBufferException;
  */
 public class ImageUtil {
     private static final String TAG = "ImageUtil";
-    private static final String mSavePath = "/sdcard/DCIM/";
-
+    //private static final String mSavePath = "/sdcard/DCIM/";
+    private static final String mSavePath = "/sdcard/DCIM/test";
     public static byte[] getI420DataFromImage(Image image) {
         Rect crop = image.getCropRect();
         int format = image.getFormat();
@@ -354,6 +364,20 @@ public class ImageUtil {
         return spToBitmap(data, w, h, 1, 0);
     }
 
+    public static Bitmap nv21ToBitmap1(byte[] nv21, int width, int height) {
+        Bitmap bitmap = null;
+        try {
+            YuvImage image = new YuvImage(nv21, ImageFormat.NV21, width, height, null);
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            image.compressToJpeg(new Rect(0, 0, width, height), 80, stream);
+            bitmap = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
+            stream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return bitmap;
+    }
+
     private static Bitmap spToBitmap(byte[] data, int w, int h, int uOff, int vOff) {
         int plane = w * h;
         int[] colors = new int[plane];
@@ -381,20 +405,6 @@ public class ImageUtil {
             if ((j & 1) == 0) uvPos -= w;
         }
         return Bitmap.createBitmap(colors, w, h, Bitmap.Config.RGB_565);
-    }
-
-    public static Bitmap nv21ToBitmap1(byte[] nv21, int width, int height) {
-        Bitmap bitmap = null;
-        try {
-            YuvImage image = new YuvImage(nv21, ImageFormat.NV21, width, height, null);
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            image.compressToJpeg(new Rect(0, 0, width, height), 80, stream);
-            bitmap = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
-            stream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return bitmap;
     }
 
 
@@ -446,11 +456,22 @@ public class ImageUtil {
     public static int width = 0;
     public static int height = 0;
 
+    public static void matToPng(Mat mat) {
+        // test E
+        mat.width();
+        Log.d(TAG, "Mat width : " + mat.width() + " Mat height : " + mat.height());
+        Bitmap newBitMap = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ALPHA_8);
+        Utils.matToBitmap(mat, newBitMap);
+        ImageUtil.saveBitmap("m_to_b", newBitMap);
+        // test
+    }
     /**
      * Save Bitmap
      */
     public static void saveBitmap(String name, Bitmap bitmap) {
         LogUtil.d("Ready to save picture" + name);
+        long now = SystemClock.uptimeMillis();
+        name = name + "_" + now;
         //指定我们想要存储文件的地址
         //判断指定文件夹的路径是否存在
         File file = new File(mSavePath);
@@ -787,4 +808,38 @@ public class ImageUtil {
         SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
     }
 
+    /**
+     * 切图，生成新的 Mat
+     *
+     * @param bitmap 原始图片Bitmap
+     * @return Mat
+     */
+    public static Mat cutImgROI(Mat bitmap) {
+        int startRow = 48, endRow = 48 + 416;
+        int startCol = 384, endCol = 384 + 512;
+        Range areaRow = new Range(startRow, endRow);
+        Range areaCol = new Range(startCol, endCol);
+        return new Mat(bitmap, areaRow, areaCol);
+    }
+    private static ExecutorService executor;
+    public static void saveClearBitmap(ImageManager imageManager) {
+        String prefix = "Laplacian";
+        executor = Executors.newFixedThreadPool(10);
+        for (int i = 0; i < imageManager.getImageSize(); i++) {
+            Bitmap srcBitmap = imageManager.getImageList().get(i).getBitmap();
+            double lapValue = imageManager.getImageList().get(i).getLaplacian();
+            Mat mat = new Mat();
+            Utils.bitmapToMat(srcBitmap, mat);
+            mat = ImageUtil.cutImgROI(mat);
+            Mat finalMat = mat;
+            int finalIndex = i;
+            executor.execute(() -> {
+                Log.d("HBK-BC", "保存测试图片------------------start");
+                String fileName = "/sdcard/DCIM/test/Laplacian[" + finalIndex + "]-" + lapValue + ".png";
+                Imgcodecs.imwrite(fileName, finalMat);
+                Log.d("HBK-BC", "保存测试图片--------------------end");
+            });
+        }
+        executor.shutdown();
+    }
 }

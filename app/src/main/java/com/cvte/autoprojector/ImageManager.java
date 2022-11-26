@@ -17,17 +17,69 @@ import java.util.List;
 public class ImageManager {
 
     private final List<ImageBean> imageList = new ArrayList<>();
+    private final List<LocationBean> locationList = new ArrayList<>();
 
     private int mDuration;
     private int maxLapsIndex = -1;
+    private int mLocationCount = 0;
+    private int mLocationIndex = 0;
+    private double laplacian = 0.0;
+    private int mSteps;
+
+    private int mImageCount = 0;
+
+    public void decreaseImageCount() {
+        this.mImageCount--;
+        //Log.d("philip", "mImageCount " + mImageCount);
+    }
+    public void increaseImageCount() {
+        this.mImageCount++;
+        //Log.d("philip", "mImageCount " + mImageCount);
+    }
+    public int getImageCount() {
+        return mImageCount;
+    }
 
     public ImageManager() {
+        mImageCount = 0;
+    }
 
+    public List<LocationBean> getLocationList() {
+        return locationList;
+    }
+
+    public int getSteps() {
+        return mSteps;
+    }
+
+    public void setSteps(int steps) {
+        this.mSteps = steps;
+    }
+
+    public int getLocationIndex() {
+        return mLocationIndex;
+    }
+
+    public void setLocationIndex(int mLocationIndex) {
+        this.mLocationIndex = mLocationIndex;
+    }
+
+    public void setmLocation(int mLocationCount) {
+        this.mLocationCount = mLocationCount;
+    }
+
+    public int getmLocation() {
+        return mLocationCount;
     }
 
     public void addImage(ImageBean imageBean) {
 //        if (!imageList.contains(imageBean)) {
         imageList.add(imageBean);
+//        }
+    }
+    public void addLocation(LocationBean locationBean) {
+//        if (!imageList.contains(imageBean)) {
+        locationList.add(locationBean);
 //        }
     }
 
@@ -75,6 +127,16 @@ public class ImageManager {
     /**
      * 计算数据池图片清晰度
      */
+    public double calculateOnePhotoClarity(Bitmap bitmap) {
+        if (bitmap == null) {
+            return -1;
+        }
+        double laplaceValue = OpenCVUtils.calculateOneBitmapClarityWithNoGray(bitmap);
+        return laplaceValue;
+    }
+    /**
+     * 计算数据池图片清晰度
+     */
     public double calculateMultiPhotoClarity() {
         Log.d("HBK-BC-L", "Laplace start--------------------------------");
         long timeBegin = SystemClock.uptimeMillis();
@@ -92,15 +154,15 @@ public class ImageManager {
             }
         }
         Log.d("HBK-BC-L", "Laplace end--------------------------耗时：" + (SystemClock.uptimeMillis() - timeBegin));
-        //calculateBitmapPoolLaplaceMax();
-        return calculateMultiLaplace();
+        return calculateBitmapPoolLaplaceMax();
+        //return calculateMultiLaplace();
     }
     /**
      * 查找清晰度最大的值
      */
-    public void calculateBitmapPoolLaplaceMax() {
+    public int calculateBitmapPoolLaplaceMax() {
         if (imageList.isEmpty()) {
-            return;
+            return -1;
         }
         ImageBean maxLapsBitmap = imageList.get(0);
         for (int i = 0; i < imageList.size(); i++) {
@@ -113,7 +175,9 @@ public class ImageManager {
         }
         maxLapsIndex = maxLapsBitmap.getIndex();
         Log.d("HBK-BC-L", "Pool MAX value:" + maxLapsBitmap.getLaplacian() + " index:" + maxLapsBitmap.getIndex());
+        return maxLapsIndex;
     }
+
     public double calculateMultiLaplace() {
         if (imageList.isEmpty()) {
             Log.d("philip", "imageList is empty ERROR ERROR ERROR ERROR ERROR");

@@ -79,6 +79,7 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
     private boolean mOpenDebug = true;
     protected OnCameraListener mCameraListener;
     private static long pre_now=0;
+    private static long mFrame_id = 0;
 
     public Camera2Helper(OnCameraListener cameraListener) {
         mCameraListener = cameraListener;
@@ -397,7 +398,7 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
     private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) {
         builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
         if (mFpsRanges != null) {
-            Range<Integer> fpsRange = mFpsRanges[(mFpsRanges.length - 1)];
+            Range<Integer> fpsRange = mFpsRanges[(mFpsRanges.length - 2)];
 //            Range<Integer> fpsRange = mFpsRanges[0];
             Log.d("HBK-FPS", "mFpsRanges.length = " + mFpsRanges.length);
             Log.d("HBK-FPS", "(mFpsRanges.length - 1) = " + (mFpsRanges.length - 1));
@@ -407,6 +408,9 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
                 Log.d("HBK-FPS", "mFpsRanges[" + i + "] = " + mFpsRanges[i]);
             }
             builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
+            builder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, 2000);
+            builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+            builder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
             LogUtil.d("set fps range = " + fpsRange.toString());
 
         }
@@ -432,11 +436,14 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
         if (image == null || image.getWidth() == 0 || image.getHeight() == 0) {
             return;
         }
+        mFrame_id++;
         if (ImageFormat.YUV_420_888 == image.getFormat()) {
             long now = SystemClock.uptimeMillis();
             pre_now = now;
 
             if (beginTakePhoto()) {
+                Log.d("philip", "FrameID :  E "+mFrame_id);
+                long currentFrameId = mFrame_id;
                 SystemPropertiesAdapter.set(PERSIST_BEGIN_TAKE_PHOTO, "0");
                 final byte[] yuv = ImageUtil.YUV_420_888toNV21(image);
                 // final byte[] yuv = ImageUtil.getDataFromImage(image, ImageUtil.COLOR_FormatNV21);
@@ -444,16 +451,15 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
                 mProcessHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        long now = SystemClock.uptimeMillis();
-                        //Log.d(TAG, "philip onImageAvailable  " + (now-pre_now));
-                        //pre_now = now;
+/*                        long now = SystemClock.uptimeMillis();
+                        Log.d(TAG, "philip onImageAvailable  " + (now-pre_now));
+                        pre_now = now;*/
                         // bitmap
                         Bitmap bitmap = ImageUtil.nv21ToBitmap1(yuv, SIZE_WIDTH, SIZE_HEIGHT);
                         long duration = SystemClock.uptimeMillis() - now;
                         //Log.d(TAG, "create bitmap duration = " + duration);
                         if (mCameraListener != null) {
-                            mCameraListener.onCaptureComplete(bitmap, null, duration);
-                            SystemPropertiesAdapter.set(PERSIST_FINISH_TAKE_PHOTO, "1");
+                            mCameraListener.onCaptureComplete(bitmap, null, duration, currentFrameId);
                         }
                     }
                 });
@@ -468,7 +474,7 @@ public class Camera2Helper implements ImageReader.OnImageAvailableListener {
 
         void onCameraError(int error);
 
-        void onCaptureComplete(Bitmap bitmap, File file, long duration);
+        void onCaptureComplete(Bitmap bitmap, File file, long duration, long frameId);
     }
 
 

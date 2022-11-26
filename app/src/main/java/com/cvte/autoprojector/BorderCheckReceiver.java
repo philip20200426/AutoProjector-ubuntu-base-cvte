@@ -62,7 +62,7 @@ public class BorderCheckReceiver {
      */
     public void stopObserving() {
         Log.d("HBK-U", "stopObserving");
-        borderUEventObserver.stopObserving();
+        //borderUEventObserver.stopObserving();
     }
 
 

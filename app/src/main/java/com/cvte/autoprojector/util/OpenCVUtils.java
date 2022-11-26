@@ -1,5 +1,6 @@
 package com.cvte.autoprojector.util;
 
+import static org.opencv.core.Core.BORDER_DEFAULT;
 import static org.opencv.core.Core.convertScaleAbs;
 import static org.opencv.core.Core.mean;
 
@@ -31,26 +32,28 @@ public class OpenCVUtils {
         int ddepth = CvType.CV_8U;
         Mat mat = new Mat();
         Utils.bitmapToMat(srcBitmap, mat);
-        mat = cutImgROI(mat);
+        mat = ImageUtil.cutImgROI(mat);
         Mat resizeMat = new Mat();
-        Imgproc.resize(mat, resizeMat, new org.opencv.core.Size(128, 128));
+        //Imgproc.resize(mat, resizeMat, new org.opencv.core.Size(128, 128));
+
+        //for test
+        //ImageUtil.matToPng(mat);
+
         Mat lapMat = new Mat();
         Mat gauMat = new Mat();
 
 //==================生成卷积核======================
-        Mat kx = new Mat(3, 3, -1);
-        //float[] robert_x = new float[]{0, 0,0,-1,0,-1,5,-1,0,-1,0};
-        //kx.put(0, 0, robert_x);
+/*        Mat kx = new Mat(3, 3, CvType.CV_8U);
+        byte[] robert_x = new byte[]{0, -1, 0, -1, 5, -1, 0, -1, 0};
+        kx.put(0, 0, robert_x);
+        //gauMat.create(mat.size(), mat.type());
+        Imgproc.filter2D(mat, gauMat, mat.depth(), kx);*/
 //===================================================
-        //Imgproc.filter2D(resizeMat, gauMat, ddepth, kx);//进行卷积操作
+        //Imgproc.GaussianBlur(mat, gauMat, new Size(3.0, 1.0), 1.0, 0, BORDER_DEFAULT);
+        //Imgproc.blur(mat, gauMat, new Size(5.0, 5.0));
+        //Imgproc.medianBlur(resizeMat, gauMat, 1);
 
-        //Imgproc.GaussianBlur(resizeMat, gauMat, new Size(7.0, 7.0), 0.0, 0);
-        Imgproc.blur(resizeMat, gauMat, new Size(7.0, 7.0));
-        //Imgproc.medianBlur(resizeMat, gauMat, 9);
-        //Imgproc.filter2D();
-        //Core.convertScaleAbs();   //Mat转换成8位
-
-        Imgproc.Laplacian(gauMat, lapMat, ddepth, kernel_size);
+        Imgproc.Laplacian(mat, lapMat, ddepth, kernel_size);
         //Core.convertScaleAbs(lapMat, lapMat);
         Scalar mean = mean(lapMat);
 
@@ -64,8 +67,8 @@ public class OpenCVUtils {
      * @return Mat
      */
     public static Mat cutImgROI(Mat bitmap) {
-        int startRow = 132, endRow = 132 + 256;
-        int startCol = 512, endCol = 512 + 256;
+        int startRow = 48, endRow = 48 + 416;
+        int startCol = 384, endCol = 384 + 512;
         Range areaRow = new Range(startRow, endRow);
         Range areaCol = new Range(startCol, endCol);
         return new Mat(bitmap, areaRow, areaCol);
